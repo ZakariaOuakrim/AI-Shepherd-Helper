@@ -1,0 +1,71 @@
+{
+  "zone_restrictions": {
+    "protected_areas": [
+      8,
+      9
+    ],
+    "seasonal_closures": {
+      "breeding_season": {
+        "zones": [
+          3,
+          7
+        ],
+        "months": [
+          4,
+          5,
+          6
+        ],
+        "reason": "Wildlife breeding protection"
+      },
+      "vegetation_recovery": {
+        "zones": [
+          1,
+          2,
+          5
+        ],
+        "months": [
+          2,
+          3
+        ],
+        "reason": "Vegetation recovery period"
+      }
+    },
+    "weather_based": {
+      "flood_prone": {
+        "zones": [
+          4,
+          6
+        ],
+        "trigger": "rainfall > 15mm",
+        "reason": "Flood risk"
+      },
+      "extreme_temperature": {
+        "zones": [
+          0,
+          1,
+          2
+        ],
+        "trigger": "temperature < 5C",
+        "reason": "Cold weather protection"
+      }
+    }
+  },
+  "carrying_capacity_limits": {
+    "max_sheep_per_hectare": 8,
+    "max_consecutive_days": 7,
+    "recovery_period_days": 14
+  },
+  "water_access_requirements": {
+    "max_distance_from_water_km": 2.0,
+    "zones_without_water": [
+      8,
+      9
+    ]
+  },
+  "terrain_restrictions": {
+    "max_slope_degrees": 25,
+    "unsafe_terrain_zones": [
+      9
+    ]
+  }
+}

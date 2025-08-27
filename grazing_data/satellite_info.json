@@ -1,0 +1,23 @@
+{
+  "data_sources": {
+    "vegetation": "Sentinel-2",
+    "weather": "MODIS Terra/Aqua",
+    "topography": "SRTM DEM"
+  },
+  "update_frequency": {
+    "vegetation": "weekly",
+    "weather": "daily",
+    "topography": "static"
+  },
+  "spatial_resolution": {
+    "vegetation": "10m",
+    "weather": "1km",
+    "topography": "30m"
+  },
+  "region": {
+    "name": "Ifrane Grazing Area",
+    "center_lat": 33.533,
+    "center_lon": -5.11,
+    "area_km2": 25
+  }
+}

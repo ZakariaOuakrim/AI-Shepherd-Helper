@@ -1,0 +1,9 @@
+name,type,lat,lon,seasonal,zone,accessible
+Ain Tit,spring,33.525,-5.15,False,1,True
+Oued Tizguit,stream,33.535,-5.12,True,2,True
+Source Atlas,spring,33.545,-5.08,False,3,True
+Bassin Collecteur,pond,33.54,-5.16,False,4,True
+Puits Pastoral,well,33.53,-5.11,False,5,True
+Ruisseau Saisonnier,stream,33.555,-5.14,True,6,True
+Source Montagne,spring,33.52,-5.09,False,7,True
+Mare Temporaire,pond,33.565,-5.13,True,10,True

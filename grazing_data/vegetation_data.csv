@@ -1,0 +1,521 @@
+date,zone_id,ndvi,biomass_kg_per_hectare,carrying_capacity_sheep_per_hectare,grass_quality,accessible,restriction_reason
+2024-01-01,1,0.205,245.6,2.5,poor,True,
+2024-01-01,2,0.183,220.2,2.2,very_poor,True,
+2024-01-01,3,0.162,194.4,1.9,very_poor,True,
+2024-01-01,4,0.0,0.0,0.0,restricted,False,Flood risk
+2024-01-01,5,0.133,159.8,1.6,very_poor,True,
+2024-01-01,6,0.0,0.0,0.0,restricted,False,Flood risk
+2024-01-01,7,0.191,229.4,2.3,very_poor,True,
+2024-01-01,8,0.0,0.0,0.0,restricted,False,Protected area
+2024-01-01,9,0.0,0.0,0.0,restricted,False,Protected area
+2024-01-01,10,0.196,234.7,2.3,very_poor,True,
+2024-01-08,1,0.184,220.5,2.2,very_poor,True,
+2024-01-08,2,0.214,257.0,2.6,poor,True,
+2024-01-08,3,0.049,59.3,0.6,very_poor,True,
+2024-01-08,4,0.078,94.1,0.9,very_poor,True,
+2024-01-08,5,0.076,91.3,0.9,very_poor,True,
+2024-01-08,6,0.115,138.1,1.4,very_poor,True,
+2024-01-08,7,0.0,0.0,0.0,very_poor,True,
+2024-01-08,8,0.0,0.0,0.0,restricted,False,Protected area
+2024-01-08,9,0.0,0.0,0.0,restricted,False,Protected area
+2024-01-08,10,0.145,173.9,1.7,very_poor,True,
+2024-01-15,1,0.062,74.9,0.7,very_poor,True,
+2024-01-15,2,0.02,23.5,0.2,very_poor,True,
+2024-01-15,3,0.0,0.0,0.0,very_poor,True,
+2024-01-15,4,0.0,0.0,0.0,very_poor,True,
+2024-01-15,5,0.029,34.4,0.3,very_poor,True,
+2024-01-15,6,0.052,62.0,0.6,very_poor,True,
+2024-01-15,7,0.094,113.1,1.1,very_poor,True,
+2024-01-15,8,0.0,0.0,0.0,restricted,False,Protected area
+2024-01-15,9,0.0,0.0,0.0,restricted,False,Protected area
+2024-01-15,10,0.095,114.4,1.1,very_poor,True,
+2024-01-22,1,0.149,178.5,1.8,very_poor,True,
+2024-01-22,2,0.182,218.3,2.2,very_poor,True,
+2024-01-22,3,0.154,185.2,1.9,very_poor,True,
+2024-01-22,4,0.0,0.0,0.0,restricted,False,Flood risk
+2024-01-22,5,0.167,200.3,2.0,very_poor,True,
+2024-01-22,6,0.0,0.0,0.0,restricted,False,Flood risk
+2024-01-22,7,0.137,164.6,1.6,very_poor,True,
+2024-01-22,8,0.0,0.0,0.0,restricted,False,Protected area
+2024-01-22,9,0.0,0.0,0.0,restricted,False,Protected area
+2024-01-22,10,0.179,214.6,2.1,very_poor,True,
+2024-01-29,1,0.29,348.1,3.5,poor,True,
+2024-01-29,2,0.224,268.7,2.7,poor,True,
+2024-01-29,3,0.162,194.5,1.9,very_poor,True,
+2024-01-29,4,0.0,0.0,0.0,restricted,False,Flood risk
+2024-01-29,5,0.212,254.2,2.5,poor,True,
+2024-01-29,6,0.0,0.0,0.0,restricted,False,Flood risk
+2024-01-29,7,0.232,277.8,2.8,poor,True,
+2024-01-29,8,0.0,0.0,0.0,restricted,False,Protected area
+2024-01-29,9,0.0,0.0,0.0,restricted,False,Protected area
+2024-01-29,10,0.181,217.2,2.2,very_poor,True,
+2024-02-05,1,0.0,0.0,0.0,restricted,False,Vegetation recovery period
+2024-02-05,2,0.0,0.0,0.0,restricted,False,Vegetation recovery period
+2024-02-05,3,0.226,271.0,2.7,poor,True,
+2024-02-05,4,0.0,0.0,0.0,restricted,False,Flood risk
+2024-02-05,5,0.0,0.0,0.0,restricted,False,Vegetation recovery period
+2024-02-05,6,0.0,0.0,0.0,restricted,False,Flood risk
+2024-02-05,7,0.19,228.6,2.3,very_poor,True,
+2024-02-05,8,0.0,0.0,0.0,restricted,False,Protected area
+2024-02-05,9,0.0,0.0,0.0,restricted,False,Protected area
+2024-02-05,10,0.198,237.0,2.4,very_poor,True,
+2024-02-12,1,0.0,0.0,0.0,restricted,False,Vegetation recovery period
+2024-02-12,2,0.0,0.0,0.0,restricted,False,Vegetation recovery period
+2024-02-12,3,0.051,61.6,0.6,very_poor,True,
+2024-02-12,4,0.127,152.4,1.5,very_poor,True,
+2024-02-12,5,0.0,0.0,0.0,restricted,False,Vegetation recovery period
+2024-02-12,6,0.113,135.5,1.4,very_poor,True,
+2024-02-12,7,0.1,120.5,1.2,very_poor,True,
+2024-02-12,8,0.0,0.0,0.0,restricted,False,Protected area
+2024-02-12,9,0.0,0.0,0.0,restricted,False,Protected area
+2024-02-12,10,0.146,175.2,1.8,very_poor,True,
+2024-02-19,1,0.0,0.0,0.0,restricted,False,Vegetation recovery period
+2024-02-19,2,0.0,0.0,0.0,restricted,False,Vegetation recovery period
+2024-02-19,3,0.216,259.5,2.6,poor,True,
+2024-02-19,4,0.0,0.0,0.0,restricted,False,Flood risk
+2024-02-19,5,0.0,0.0,0.0,restricted,False,Vegetation recovery period
+2024-02-19,6,0.0,0.0,0.0,restricted,False,Flood risk
+2024-02-19,7,0.23,275.9,2.8,poor,True,
+2024-02-19,8,0.0,0.0,0.0,restricted,False,Protected area
+2024-02-19,9,0.0,0.0,0.0,restricted,False,Protected area
+2024-02-19,10,0.259,310.5,3.1,poor,True,
+2024-02-26,1,0.0,0.0,0.0,restricted,False,Vegetation recovery period
+2024-02-26,2,0.0,0.0,0.0,restricted,False,Vegetation recovery period
+2024-02-26,3,0.208,250.2,2.5,poor,True,
+2024-02-26,4,0.207,247.9,2.5,poor,True,
+2024-02-26,5,0.0,0.0,0.0,restricted,False,Vegetation recovery period
+2024-02-26,6,0.142,170.5,1.7,very_poor,True,
+2024-02-26,7,0.152,182.0,1.8,very_poor,True,
+2024-02-26,8,0.0,0.0,0.0,restricted,False,Protected area
+2024-02-26,9,0.0,0.0,0.0,restricted,False,Protected area
+2024-02-26,10,0.221,265.3,2.7,poor,True,
+2024-03-04,1,0.0,0.0,0.0,restricted,False,Vegetation recovery period
+2024-03-04,2,0.0,0.0,0.0,restricted,False,Vegetation recovery period
+2024-03-04,3,0.533,639.9,6.4,good,True,
+2024-03-04,4,0.0,0.0,0.0,restricted,False,Flood risk
+2024-03-04,5,0.0,0.0,0.0,restricted,False,Vegetation recovery period
+2024-03-04,6,0.0,0.0,0.0,restricted,False,Flood risk
+2024-03-04,7,0.528,633.3,6.3,good,True,
+2024-03-04,8,0.0,0.0,0.0,restricted,False,Protected area
+2024-03-04,9,0.0,0.0,0.0,restricted,False,Protected area
+2024-03-04,10,0.513,615.1,6.2,good,True,
+2024-03-11,1,0.0,0.0,0.0,restricted,False,Vegetation recovery period
+2024-03-11,2,0.0,0.0,0.0,restricted,False,Vegetation recovery period
+2024-03-11,3,0.577,692.9,6.9,good,True,
+2024-03-11,4,0.0,0.0,0.0,restricted,False,Flood risk
+2024-03-11,5,0.0,0.0,0.0,restricted,False,Vegetation recovery period
+2024-03-11,6,0.0,0.0,0.0,restricted,False,Flood risk
+2024-03-11,7,0.541,649.7,6.5,good,True,
+2024-03-11,8,0.0,0.0,0.0,restricted,False,Protected area
+2024-03-11,9,0.0,0.0,0.0,restricted,False,Protected area
+2024-03-11,10,0.554,664.8,6.6,good,True,
+2024-03-18,1,0.0,0.0,0.0,restricted,False,Vegetation recovery period
+2024-03-18,2,0.0,0.0,0.0,restricted,False,Vegetation recovery period
+2024-03-18,3,0.274,329.4,3.3,poor,True,
+2024-03-18,4,0.428,513.4,5.1,good,True,
+2024-03-18,5,0.0,0.0,0.0,restricted,False,Vegetation recovery period
+2024-03-18,6,0.395,474.0,4.7,poor,True,
+2024-03-18,7,0.33,396.0,4.0,poor,True,
+2024-03-18,8,0.0,0.0,0.0,restricted,False,Protected area
+2024-03-18,9,0.0,0.0,0.0,restricted,False,Protected area
+2024-03-18,10,0.274,329.0,3.3,poor,True,
+2024-03-25,1,0.0,0.0,0.0,restricted,False,Vegetation recovery period
+2024-03-25,2,0.0,0.0,0.0,restricted,False,Vegetation recovery period
+2024-03-25,3,0.132,158.3,1.6,very_poor,True,
+2024-03-25,4,0.082,98.7,1.0,very_poor,True,
+2024-03-25,5,0.0,0.0,0.0,restricted,False,Vegetation recovery period
+2024-03-25,6,0.157,188.6,1.9,very_poor,True,
+2024-03-25,7,0.2,240.4,2.4,poor,True,
+2024-03-25,8,0.0,0.0,0.0,restricted,False,Protected area
+2024-03-25,9,0.0,0.0,0.0,restricted,False,Protected area
+2024-03-25,10,0.178,213.1,2.1,very_poor,True,
+2024-04-01,1,0.013,16.0,0.2,very_poor,True,
+2024-04-01,2,0.027,32.7,0.3,very_poor,True,
+2024-04-01,3,0.0,0.0,0.0,restricted,False,Wildlife breeding protection
+2024-04-01,4,0.049,58.8,0.6,very_poor,True,
+2024-04-01,5,0.019,22.3,0.2,very_poor,True,
+2024-04-01,6,0.001,0.9,0.0,very_poor,True,
+2024-04-01,7,0.0,0.0,0.0,restricted,False,Wildlife breeding protection
+2024-04-01,8,0.0,0.0,0.0,restricted,False,Protected area
+2024-04-01,9,0.0,0.0,0.0,restricted,False,Protected area
+2024-04-01,10,0.079,94.4,0.9,very_poor,True,
+2024-04-08,1,0.009,10.6,0.1,very_poor,True,
+2024-04-08,2,0.068,81.3,0.8,very_poor,True,
+2024-04-08,3,0.0,0.0,0.0,restricted,False,Wildlife breeding protection
+2024-04-08,4,0.056,67.6,0.7,very_poor,True,
+2024-04-08,5,0.032,38.1,0.4,very_poor,True,
+2024-04-08,6,0.0,0.0,0.0,very_poor,True,
+2024-04-08,7,0.0,0.0,0.0,restricted,False,Wildlife breeding protection
+2024-04-08,8,0.0,0.0,0.0,restricted,False,Protected area
+2024-04-08,9,0.0,0.0,0.0,restricted,False,Protected area
+2024-04-08,10,0.0,0.0,0.0,very_poor,True,
+2024-04-15,1,0.017,20.4,0.2,very_poor,True,
+2024-04-15,2,0.102,122.8,1.2,very_poor,True,
+2024-04-15,3,0.0,0.0,0.0,restricted,False,Wildlife breeding protection
+2024-04-15,4,0.098,117.3,1.2,very_poor,True,
+2024-04-15,5,0.133,160.1,1.6,very_poor,True,
+2024-04-15,6,0.188,225.9,2.3,very_poor,True,
+2024-04-15,7,0.0,0.0,0.0,restricted,False,Wildlife breeding protection
+2024-04-15,8,0.0,0.0,0.0,restricted,False,Protected area
+2024-04-15,9,0.0,0.0,0.0,restricted,False,Protected area
+2024-04-15,10,0.095,114.4,1.1,very_poor,True,
+2024-04-22,1,0.365,438.2,4.4,poor,True,
+2024-04-22,2,0.369,442.3,4.4,poor,True,
+2024-04-22,3,0.0,0.0,0.0,restricted,False,Wildlife breeding protection
+2024-04-22,4,0.386,463.1,4.6,poor,True,
+2024-04-22,5,0.355,425.6,4.3,poor,True,
+2024-04-22,6,0.341,409.2,4.1,poor,True,
+2024-04-22,7,0.0,0.0,0.0,restricted,False,Wildlife breeding protection
+2024-04-22,8,0.0,0.0,0.0,restricted,False,Protected area
+2024-04-22,9,0.0,0.0,0.0,restricted,False,Protected area
+2024-04-22,10,0.278,333.4,3.3,poor,True,
+2024-04-29,1,0.121,145.7,1.5,very_poor,True,
+2024-04-29,2,0.109,131.1,1.3,very_poor,True,
+2024-04-29,3,0.0,0.0,0.0,restricted,False,Wildlife breeding protection
+2024-04-29,4,0.21,252.1,2.5,poor,True,
+2024-04-29,5,0.111,132.9,1.3,very_poor,True,
+2024-04-29,6,0.138,165.4,1.7,very_poor,True,
+2024-04-29,7,0.0,0.0,0.0,restricted,False,Wildlife breeding protection
+2024-04-29,8,0.0,0.0,0.0,restricted,False,Protected area
+2024-04-29,9,0.0,0.0,0.0,restricted,False,Protected area
+2024-04-29,10,0.091,109.0,1.1,very_poor,True,
+2024-05-06,1,0.109,130.7,1.3,very_poor,True,
+2024-05-06,2,0.056,67.6,0.7,very_poor,True,
+2024-05-06,3,0.0,0.0,0.0,restricted,False,Wildlife breeding protection
+2024-05-06,4,0.125,150.3,1.5,very_poor,True,
+2024-05-06,5,0.03,36.3,0.4,very_poor,True,
+2024-05-06,6,0.082,98.1,1.0,very_poor,True,
+2024-05-06,7,0.0,0.0,0.0,restricted,False,Wildlife breeding protection
+2024-05-06,8,0.0,0.0,0.0,restricted,False,Protected area
+2024-05-06,9,0.0,0.0,0.0,restricted,False,Protected area
+2024-05-06,10,0.064,76.4,0.8,very_poor,True,
+2024-05-13,1,0.036,42.7,0.4,very_poor,True,
+2024-05-13,2,0.024,28.3,0.3,very_poor,True,
+2024-05-13,3,0.0,0.0,0.0,restricted,False,Wildlife breeding protection
+2024-05-13,4,0.123,147.2,1.5,very_poor,True,
+2024-05-13,5,0.111,133.0,1.3,very_poor,True,
+2024-05-13,6,0.084,100.5,1.0,very_poor,True,
+2024-05-13,7,0.0,0.0,0.0,restricted,False,Wildlife breeding protection
+2024-05-13,8,0.0,0.0,0.0,restricted,False,Protected area
+2024-05-13,9,0.0,0.0,0.0,restricted,False,Protected area
+2024-05-13,10,0.13,155.4,1.6,very_poor,True,
+2024-05-20,1,0.171,204.8,2.0,very_poor,True,
+2024-05-20,2,0.142,170.7,1.7,very_poor,True,
+2024-05-20,3,0.0,0.0,0.0,restricted,False,Wildlife breeding protection
+2024-05-20,4,0.115,138.0,1.4,very_poor,True,
+2024-05-20,5,0.103,123.5,1.2,very_poor,True,
+2024-05-20,6,0.081,97.4,1.0,very_poor,True,
+2024-05-20,7,0.0,0.0,0.0,restricted,False,Wildlife breeding protection
+2024-05-20,8,0.0,0.0,0.0,restricted,False,Protected area
+2024-05-20,9,0.0,0.0,0.0,restricted,False,Protected area
+2024-05-20,10,0.197,235.9,2.4,very_poor,True,
+2024-05-27,1,0.031,37.3,0.4,very_poor,True,
+2024-05-27,2,0.045,54.5,0.5,very_poor,True,
+2024-05-27,3,0.0,0.0,0.0,restricted,False,Wildlife breeding protection
+2024-05-27,4,0.005,6.1,0.1,very_poor,True,
+2024-05-27,5,0.04,47.6,0.5,very_poor,True,
+2024-05-27,6,0.0,0.0,0.0,very_poor,True,
+2024-05-27,7,0.0,0.0,0.0,restricted,False,Wildlife breeding protection
+2024-05-27,8,0.0,0.0,0.0,restricted,False,Protected area
+2024-05-27,9,0.0,0.0,0.0,restricted,False,Protected area
+2024-05-27,10,0.059,71.3,0.7,very_poor,True,
+2024-06-03,1,0.028,33.6,0.3,very_poor,True,
+2024-06-03,2,0.0,0.0,0.0,very_poor,True,
+2024-06-03,3,0.0,0.0,0.0,restricted,False,Wildlife breeding protection
+2024-06-03,4,0.0,0.0,0.0,very_poor,True,
+2024-06-03,5,0.0,0.0,0.0,very_poor,True,
+2024-06-03,6,0.0,0.0,0.0,very_poor,True,
+2024-06-03,7,0.0,0.0,0.0,restricted,False,Wildlife breeding protection
+2024-06-03,8,0.0,0.0,0.0,restricted,False,Protected area
+2024-06-03,9,0.0,0.0,0.0,restricted,False,Protected area
+2024-06-03,10,0.0,0.0,0.0,very_poor,True,
+2024-06-10,1,0.12,143.5,1.4,very_poor,True,
+2024-06-10,2,0.065,78.2,0.8,very_poor,True,
+2024-06-10,3,0.0,0.0,0.0,restricted,False,Wildlife breeding protection
+2024-06-10,4,0.029,34.7,0.3,very_poor,True,
+2024-06-10,5,0.093,111.6,1.1,very_poor,True,
+2024-06-10,6,0.132,158.5,1.6,very_poor,True,
+2024-06-10,7,0.0,0.0,0.0,restricted,False,Wildlife breeding protection
+2024-06-10,8,0.0,0.0,0.0,restricted,False,Protected area
+2024-06-10,9,0.0,0.0,0.0,restricted,False,Protected area
+2024-06-10,10,0.176,211.1,2.1,very_poor,True,
+2024-06-17,1,0.023,27.0,0.3,very_poor,True,
+2024-06-17,2,0.02,23.6,0.2,very_poor,True,
+2024-06-17,3,0.0,0.0,0.0,restricted,False,Wildlife breeding protection
+2024-06-17,4,0.0,0.0,0.0,very_poor,True,
+2024-06-17,5,0.0,0.0,0.0,very_poor,True,
+2024-06-17,6,0.106,127.3,1.3,very_poor,True,
+2024-06-17,7,0.0,0.0,0.0,restricted,False,Wildlife breeding protection
+2024-06-17,8,0.0,0.0,0.0,restricted,False,Protected area
+2024-06-17,9,0.0,0.0,0.0,restricted,False,Protected area
+2024-06-17,10,0.0,0.0,0.0,very_poor,True,
+2024-06-24,1,0.325,390.4,3.9,poor,True,
+2024-06-24,2,0.245,294.2,2.9,poor,True,
+2024-06-24,3,0.0,0.0,0.0,restricted,False,Wildlife breeding protection
+2024-06-24,4,0.0,0.0,0.0,restricted,False,Flood risk
+2024-06-24,5,0.259,310.5,3.1,poor,True,
+2024-06-24,6,0.0,0.0,0.0,restricted,False,Flood risk
+2024-06-24,7,0.0,0.0,0.0,restricted,False,Wildlife breeding protection
+2024-06-24,8,0.0,0.0,0.0,restricted,False,Protected area
+2024-06-24,9,0.0,0.0,0.0,restricted,False,Protected area
+2024-06-24,10,0.42,504.4,5.0,good,True,
+2024-07-01,1,0.029,34.8,0.3,very_poor,True,
+2024-07-01,2,0.0,0.0,0.0,very_poor,True,
+2024-07-01,3,0.01,12.5,0.1,very_poor,True,
+2024-07-01,4,0.0,0.0,0.0,very_poor,True,
+2024-07-01,5,0.047,56.6,0.6,very_poor,True,
+2024-07-01,6,0.028,33.8,0.3,very_poor,True,
+2024-07-01,7,0.0,0.0,0.0,very_poor,True,
+2024-07-01,8,0.0,0.0,0.0,restricted,False,Protected area
+2024-07-01,9,0.0,0.0,0.0,restricted,False,Protected area
+2024-07-01,10,0.033,40.1,0.4,very_poor,True,
+2024-07-08,1,0.277,331.9,3.3,poor,True,
+2024-07-08,2,0.335,402.1,4.0,poor,True,
+2024-07-08,3,0.23,276.2,2.8,poor,True,
+2024-07-08,4,0.381,456.6,4.6,poor,True,
+2024-07-08,5,0.254,305.4,3.1,poor,True,
+2024-07-08,6,0.35,420.0,4.2,poor,True,
+2024-07-08,7,0.328,393.8,3.9,poor,True,
+2024-07-08,8,0.0,0.0,0.0,restricted,False,Protected area
+2024-07-08,9,0.0,0.0,0.0,restricted,False,Protected area
+2024-07-08,10,0.276,331.5,3.3,poor,True,
+2024-07-15,1,0.203,243.2,2.4,poor,True,
+2024-07-15,2,0.144,172.9,1.7,very_poor,True,
+2024-07-15,3,0.071,85.0,0.9,very_poor,True,
+2024-07-15,4,0.136,162.7,1.6,very_poor,True,
+2024-07-15,5,0.143,171.5,1.7,very_poor,True,
+2024-07-15,6,0.038,46.1,0.5,very_poor,True,
+2024-07-15,7,0.085,102.3,1.0,very_poor,True,
+2024-07-15,8,0.0,0.0,0.0,restricted,False,Protected area
+2024-07-15,9,0.0,0.0,0.0,restricted,False,Protected area
+2024-07-15,10,0.056,67.2,0.7,very_poor,True,
+2024-07-22,1,0.0,0.0,0.0,very_poor,True,
+2024-07-22,2,0.0,0.0,0.0,very_poor,True,
+2024-07-22,3,0.113,135.8,1.4,very_poor,True,
+2024-07-22,4,0.0,0.0,0.0,very_poor,True,
+2024-07-22,5,0.039,47.2,0.5,very_poor,True,
+2024-07-22,6,0.0,0.0,0.0,very_poor,True,
+2024-07-22,7,0.058,69.1,0.7,very_poor,True,
+2024-07-22,8,0.0,0.0,0.0,restricted,False,Protected area
+2024-07-22,9,0.0,0.0,0.0,restricted,False,Protected area
+2024-07-22,10,0.034,40.5,0.4,very_poor,True,
+2024-07-29,1,0.054,65.2,0.7,very_poor,True,
+2024-07-29,2,0.17,203.7,2.0,very_poor,True,
+2024-07-29,3,0.106,127.4,1.3,very_poor,True,
+2024-07-29,4,0.043,52.0,0.5,very_poor,True,
+2024-07-29,5,0.04,47.7,0.5,very_poor,True,
+2024-07-29,6,0.009,10.7,0.1,very_poor,True,
+2024-07-29,7,0.007,8.9,0.1,very_poor,True,
+2024-07-29,8,0.0,0.0,0.0,restricted,False,Protected area
+2024-07-29,9,0.0,0.0,0.0,restricted,False,Protected area
+2024-07-29,10,0.043,51.5,0.5,very_poor,True,
+2024-08-05,1,0.102,122.4,1.2,very_poor,True,
+2024-08-05,2,0.027,31.9,0.3,very_poor,True,
+2024-08-05,3,0.019,22.3,0.2,very_poor,True,
+2024-08-05,4,0.007,8.3,0.1,very_poor,True,
+2024-08-05,5,0.0,0.0,0.0,very_poor,True,
+2024-08-05,6,0.0,0.0,0.0,very_poor,True,
+2024-08-05,7,0.0,0.0,0.0,very_poor,True,
+2024-08-05,8,0.0,0.0,0.0,restricted,False,Protected area
+2024-08-05,9,0.0,0.0,0.0,restricted,False,Protected area
+2024-08-05,10,0.0,0.0,0.0,very_poor,True,
+2024-08-12,1,0.153,183.3,1.8,very_poor,True,
+2024-08-12,2,0.133,159.7,1.6,very_poor,True,
+2024-08-12,3,0.075,90.1,0.9,very_poor,True,
+2024-08-12,4,0.126,151.2,1.5,very_poor,True,
+2024-08-12,5,0.16,191.6,1.9,very_poor,True,
+2024-08-12,6,0.133,159.5,1.6,very_poor,True,
+2024-08-12,7,0.116,139.1,1.4,very_poor,True,
+2024-08-12,8,0.0,0.0,0.0,restricted,False,Protected area
+2024-08-12,9,0.0,0.0,0.0,restricted,False,Protected area
+2024-08-12,10,0.022,27.0,0.3,very_poor,True,
+2024-08-19,1,0.0,0.0,0.0,very_poor,True,
+2024-08-19,2,0.0,0.0,0.0,very_poor,True,
+2024-08-19,3,0.016,18.9,0.2,very_poor,True,
+2024-08-19,4,0.04,48.4,0.5,very_poor,True,
+2024-08-19,5,0.0,0.0,0.0,very_poor,True,
+2024-08-19,6,0.028,33.0,0.3,very_poor,True,
+2024-08-19,7,0.096,114.8,1.1,very_poor,True,
+2024-08-19,8,0.0,0.0,0.0,restricted,False,Protected area
+2024-08-19,9,0.0,0.0,0.0,restricted,False,Protected area
+2024-08-19,10,0.014,16.7,0.2,very_poor,True,
+2024-08-26,1,0.0,0.0,0.0,very_poor,True,
+2024-08-26,2,0.0,0.0,0.0,very_poor,True,
+2024-08-26,3,0.048,57.4,0.6,very_poor,True,
+2024-08-26,4,0.0,0.0,0.0,very_poor,True,
+2024-08-26,5,0.0,0.0,0.0,very_poor,True,
+2024-08-26,6,0.0,0.0,0.0,very_poor,True,
+2024-08-26,7,0.0,0.0,0.0,very_poor,True,
+2024-08-26,8,0.0,0.0,0.0,restricted,False,Protected area
+2024-08-26,9,0.0,0.0,0.0,restricted,False,Protected area
+2024-08-26,10,0.0,0.0,0.0,very_poor,True,
+2024-09-02,1,0.262,314.1,3.1,poor,True,
+2024-09-02,2,0.345,414.5,4.1,poor,True,
+2024-09-02,3,0.353,424.2,4.2,poor,True,
+2024-09-02,4,0.475,569.7,5.7,good,True,
+2024-09-02,5,0.386,463.3,4.6,poor,True,
+2024-09-02,6,0.316,379.5,3.8,poor,True,
+2024-09-02,7,0.367,440.4,4.4,poor,True,
+2024-09-02,8,0.0,0.0,0.0,restricted,False,Protected area
+2024-09-02,9,0.0,0.0,0.0,restricted,False,Protected area
+2024-09-02,10,0.324,388.7,3.9,poor,True,
+2024-09-09,1,0.0,0.0,0.0,very_poor,True,
+2024-09-09,2,0.059,70.4,0.7,very_poor,True,
+2024-09-09,3,0.012,14.4,0.1,very_poor,True,
+2024-09-09,4,0.038,46.0,0.5,very_poor,True,
+2024-09-09,5,0.014,16.6,0.2,very_poor,True,
+2024-09-09,6,0.016,18.7,0.2,very_poor,True,
+2024-09-09,7,0.0,0.0,0.0,very_poor,True,
+2024-09-09,8,0.0,0.0,0.0,restricted,False,Protected area
+2024-09-09,9,0.0,0.0,0.0,restricted,False,Protected area
+2024-09-09,10,0.12,143.5,1.4,very_poor,True,
+2024-09-16,1,0.221,264.9,2.6,poor,True,
+2024-09-16,2,0.18,216.1,2.2,very_poor,True,
+2024-09-16,3,0.212,254.1,2.5,poor,True,
+2024-09-16,4,0.135,162.0,1.6,very_poor,True,
+2024-09-16,5,0.198,237.8,2.4,very_poor,True,
+2024-09-16,6,0.111,132.8,1.3,very_poor,True,
+2024-09-16,7,0.238,286.0,2.9,poor,True,
+2024-09-16,8,0.0,0.0,0.0,restricted,False,Protected area
+2024-09-16,9,0.0,0.0,0.0,restricted,False,Protected area
+2024-09-16,10,0.247,295.8,3.0,poor,True,
+2024-09-23,1,0.262,315.0,3.1,poor,True,
+2024-09-23,2,0.317,380.4,3.8,poor,True,
+2024-09-23,3,0.259,310.8,3.1,poor,True,
+2024-09-23,4,0.318,382.2,3.8,poor,True,
+2024-09-23,5,0.286,342.6,3.4,poor,True,
+2024-09-23,6,0.263,315.1,3.2,poor,True,
+2024-09-23,7,0.214,256.8,2.6,poor,True,
+2024-09-23,8,0.0,0.0,0.0,restricted,False,Protected area
+2024-09-23,9,0.0,0.0,0.0,restricted,False,Protected area
+2024-09-23,10,0.214,256.2,2.6,poor,True,
+2024-09-30,1,0.176,210.8,2.1,very_poor,True,
+2024-09-30,2,0.144,172.5,1.7,very_poor,True,
+2024-09-30,3,0.175,210.5,2.1,very_poor,True,
+2024-09-30,4,0.105,126.1,1.3,very_poor,True,
+2024-09-30,5,0.109,130.4,1.3,very_poor,True,
+2024-09-30,6,0.058,69.4,0.7,very_poor,True,
+2024-09-30,7,0.093,111.8,1.1,very_poor,True,
+2024-09-30,8,0.0,0.0,0.0,restricted,False,Protected area
+2024-09-30,9,0.0,0.0,0.0,restricted,False,Protected area
+2024-09-30,10,0.079,94.8,0.9,very_poor,True,
+2024-10-07,1,0.0,0.0,0.0,very_poor,True,
+2024-10-07,2,0.074,89.1,0.9,very_poor,True,
+2024-10-07,3,0.002,2.4,0.0,very_poor,True,
+2024-10-07,4,0.104,125.4,1.3,very_poor,True,
+2024-10-07,5,0.088,106.1,1.1,very_poor,True,
+2024-10-07,6,0.051,61.2,0.6,very_poor,True,
+2024-10-07,7,0.016,19.0,0.2,very_poor,True,
+2024-10-07,8,0.0,0.0,0.0,restricted,False,Protected area
+2024-10-07,9,0.0,0.0,0.0,restricted,False,Protected area
+2024-10-07,10,0.113,135.3,1.4,very_poor,True,
+2024-10-14,1,0.001,1.2,0.0,very_poor,True,
+2024-10-14,2,0.0,0.0,0.0,very_poor,True,
+2024-10-14,3,0.024,29.0,0.3,very_poor,True,
+2024-10-14,4,0.0,0.0,0.0,very_poor,True,
+2024-10-14,5,0.033,39.1,0.4,very_poor,True,
+2024-10-14,6,0.055,65.8,0.7,very_poor,True,
+2024-10-14,7,0.0,0.0,0.0,very_poor,True,
+2024-10-14,8,0.0,0.0,0.0,restricted,False,Protected area
+2024-10-14,9,0.0,0.0,0.0,restricted,False,Protected area
+2024-10-14,10,0.057,68.2,0.7,very_poor,True,
+2024-10-21,1,0.0,0.0,0.0,very_poor,True,
+2024-10-21,2,0.071,85.2,0.9,very_poor,True,
+2024-10-21,3,0.045,54.2,0.5,very_poor,True,
+2024-10-21,4,0.0,0.0,0.0,very_poor,True,
+2024-10-21,5,0.008,9.2,0.1,very_poor,True,
+2024-10-21,6,0.0,0.0,0.0,very_poor,True,
+2024-10-21,7,0.0,0.0,0.0,very_poor,True,
+2024-10-21,8,0.0,0.0,0.0,restricted,False,Protected area
+2024-10-21,9,0.0,0.0,0.0,restricted,False,Protected area
+2024-10-21,10,0.0,0.0,0.0,very_poor,True,
+2024-10-28,1,0.094,113.1,1.1,very_poor,True,
+2024-10-28,2,0.0,0.0,0.0,very_poor,True,
+2024-10-28,3,0.052,61.8,0.6,very_poor,True,
+2024-10-28,4,0.047,56.2,0.6,very_poor,True,
+2024-10-28,5,0.072,86.1,0.9,very_poor,True,
+2024-10-28,6,0.0,0.0,0.0,very_poor,True,
+2024-10-28,7,0.026,31.6,0.3,very_poor,True,
+2024-10-28,8,0.0,0.0,0.0,restricted,False,Protected area
+2024-10-28,9,0.0,0.0,0.0,restricted,False,Protected area
+2024-10-28,10,0.115,138.0,1.4,very_poor,True,
+2024-11-04,1,0.194,233.3,2.3,very_poor,True,
+2024-11-04,2,0.243,291.3,2.9,poor,True,
+2024-11-04,3,0.209,250.4,2.5,poor,True,
+2024-11-04,4,0.213,255.5,2.6,poor,True,
+2024-11-04,5,0.182,218.4,2.2,very_poor,True,
+2024-11-04,6,0.2,240.1,2.4,poor,True,
+2024-11-04,7,0.233,279.9,2.8,poor,True,
+2024-11-04,8,0.0,0.0,0.0,restricted,False,Protected area
+2024-11-04,9,0.0,0.0,0.0,restricted,False,Protected area
+2024-11-04,10,0.195,234.1,2.3,very_poor,True,
+2024-11-11,1,0.213,255.0,2.6,poor,True,
+2024-11-11,2,0.306,367.4,3.7,poor,True,
+2024-11-11,3,0.198,237.4,2.4,very_poor,True,
+2024-11-11,4,0.294,353.1,3.5,poor,True,
+2024-11-11,5,0.277,332.0,3.3,poor,True,
+2024-11-11,6,0.172,206.6,2.1,very_poor,True,
+2024-11-11,7,0.236,283.1,2.8,poor,True,
+2024-11-11,8,0.0,0.0,0.0,restricted,False,Protected area
+2024-11-11,9,0.0,0.0,0.0,restricted,False,Protected area
+2024-11-11,10,0.238,286.1,2.9,poor,True,
+2024-11-18,1,0.336,402.7,4.0,poor,True,
+2024-11-18,2,0.307,368.2,3.7,poor,True,
+2024-11-18,3,0.261,312.7,3.1,poor,True,
+2024-11-18,4,0.0,0.0,0.0,restricted,False,Flood risk
+2024-11-18,5,0.323,387.8,3.9,poor,True,
+2024-11-18,6,0.0,0.0,0.0,restricted,False,Flood risk
+2024-11-18,7,0.273,328.0,3.3,poor,True,
+2024-11-18,8,0.0,0.0,0.0,restricted,False,Protected area
+2024-11-18,9,0.0,0.0,0.0,restricted,False,Protected area
+2024-11-18,10,0.337,404.5,4.0,poor,True,
+2024-11-25,1,0.0,0.0,0.0,restricted,False,Cold weather protection
+2024-11-25,2,0.0,0.0,0.0,restricted,False,Cold weather protection
+2024-11-25,3,0.223,267.3,2.7,poor,True,
+2024-11-25,4,0.0,0.0,0.0,restricted,False,Flood risk
+2024-11-25,5,0.185,221.7,2.2,very_poor,True,
+2024-11-25,6,0.0,0.0,0.0,restricted,False,Flood risk
+2024-11-25,7,0.261,313.1,3.1,poor,True,
+2024-11-25,8,0.0,0.0,0.0,restricted,False,Protected area
+2024-11-25,9,0.0,0.0,0.0,restricted,False,Protected area
+2024-11-25,10,0.225,269.7,2.7,poor,True,
+2024-12-02,1,0.0,0.0,0.0,restricted,False,Cold weather protection
+2024-12-02,2,0.0,0.0,0.0,restricted,False,Cold weather protection
+2024-12-02,3,0.161,193.2,1.9,very_poor,True,
+2024-12-02,4,0.12,144.2,1.4,very_poor,True,
+2024-12-02,5,0.157,188.1,1.9,very_poor,True,
+2024-12-02,6,0.048,58.0,0.6,very_poor,True,
+2024-12-02,7,0.229,275.1,2.8,poor,True,
+2024-12-02,8,0.0,0.0,0.0,restricted,False,Protected area
+2024-12-02,9,0.0,0.0,0.0,restricted,False,Protected area
+2024-12-02,10,0.166,199.1,2.0,very_poor,True,
+2024-12-09,1,0.0,0.0,0.0,restricted,False,Cold weather protection
+2024-12-09,2,0.0,0.0,0.0,restricted,False,Cold weather protection
+2024-12-09,3,0.161,192.6,1.9,very_poor,True,
+2024-12-09,4,0.0,0.0,0.0,restricted,False,Flood risk
+2024-12-09,5,0.232,278.9,2.8,poor,True,
+2024-12-09,6,0.0,0.0,0.0,restricted,False,Flood risk
+2024-12-09,7,0.054,64.8,0.6,very_poor,True,
+2024-12-09,8,0.0,0.0,0.0,restricted,False,Protected area
+2024-12-09,9,0.0,0.0,0.0,restricted,False,Protected area
+2024-12-09,10,0.171,205.7,2.1,very_poor,True,
+2024-12-16,1,0.115,138.2,1.4,very_poor,True,
+2024-12-16,2,0.097,115.9,1.2,very_poor,True,
+2024-12-16,3,0.074,89.1,0.9,very_poor,True,
+2024-12-16,4,0.018,21.1,0.2,very_poor,True,
+2024-12-16,5,0.0,0.0,0.0,very_poor,True,
+2024-12-16,6,0.044,53.2,0.5,very_poor,True,
+2024-12-16,7,0.021,25.6,0.3,very_poor,True,
+2024-12-16,8,0.0,0.0,0.0,restricted,False,Protected area
+2024-12-16,9,0.0,0.0,0.0,restricted,False,Protected area
+2024-12-16,10,0.0,0.0,0.0,very_poor,True,
+2024-12-23,1,0.0,0.0,0.0,restricted,False,Cold weather protection
+2024-12-23,2,0.0,0.0,0.0,restricted,False,Cold weather protection
+2024-12-23,3,0.024,28.6,0.3,very_poor,True,
+2024-12-23,4,0.0,0.0,0.0,very_poor,True,
+2024-12-23,5,0.0,0.0,0.0,very_poor,True,
+2024-12-23,6,0.0,0.0,0.0,very_poor,True,
+2024-12-23,7,0.0,0.0,0.0,very_poor,True,
+2024-12-23,8,0.0,0.0,0.0,restricted,False,Protected area
+2024-12-23,9,0.0,0.0,0.0,restricted,False,Protected area
+2024-12-23,10,0.043,52.1,0.5,very_poor,True,
