@@ -1,0 +1,709 @@
+# websocket-server.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: websocket-server
+  namespace: iot-apps
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: websocket-server
+  template:
+    metadata:
+      labels:
+        app: websocket-server
+    spec:
+      containers:
+      - name: websocket-server
+        image: python:3.11-slim
+        ports:
+        - containerPort: 8080
+        command: ["/bin/bash"]
+        args:
+        - -c
+        - |
+          pip install kafka-python websockets numpy
+          python /app/websocket_server.py
+        volumeMounts:
+        - name: app-code
+          mountPath: /app
+        env:
+        - name: PYTHONUNBUFFERED
+          value: "1"
+      volumes:
+      - name: app-code
+        configMap:
+          name: websocket-server-code
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: websocket-server-code
+  namespace: iot-apps
+data:
+  websocket_server.py: |
+    #!/usr/bin/env python3
+    """
+    WebSocket server that consumes sheep data from Kafka and broadcasts to web clients
+    """
+
+    import asyncio
+    import json
+    import websockets
+    import numpy as np
+    from kafka import KafkaConsumer
+    from threading import Thread
+    import time
+    from datetime import datetime
+    import logging
+
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger(__name__)
+
+    class SheepWebSocketServer:
+        def __init__(self):
+            self.clients = set()
+            self.sheep_data = {}
+            self.alerts = set()
+            self.consumer = None
+            self.distance_threshold = 500
+            
+        def distance_m(self, lat1, lon1, lat2, lon2):
+            """Calculate distance in meters between two GPS coordinates."""
+            R = 6371000  # Earth radius in meters
+            phi1, phi2 = np.radians(lat1), np.radians(lat2)
+            dphi = np.radians(lat2 - lat1)
+            dlambda = np.radians(lon2 - lon1)
+            a = np.sin(dphi/2)**2 + np.cos(phi1) * np.cos(phi2) * np.sin(dlambda/2)**2
+            return 2 * R * np.arcsin(np.sqrt(a))
+            
+        def start_kafka_consumer(self):
+            """Start consuming from Kafka in a separate thread"""
+            def consume():
+                try:
+                    self.consumer = KafkaConsumer(
+                        "sheep-topic",
+                        bootstrap_servers=[
+                            "kafka-0.kafka-headless.kafka.svc.cluster.local:9092",
+                            "kafka-1.kafka-headless.kafka.svc.cluster.local:9092"
+                        ],
+                        auto_offset_reset="latest",  # Only get new messages
+                        group_id="websocket-server",
+                        value_deserializer=None
+                    )
+                    
+                    logger.info("✅ Connected to Kafka")
+                    
+                    for message in self.consumer:
+                        try:
+                            # Parse message
+                            raw_value = message.value
+                            if raw_value is None or len(raw_value) == 0:
+                                continue
+                                
+                            json_str = raw_value.decode('utf-8')
+                            data = json.loads(json_str)
+                            
+                            # Validate required fields
+                            if not all(key in data for key in ['sheep_id', 'latitude', 'longitude']):
+                                continue
+                                
+                            sheep_id = data['sheep_id']
+                            lat = float(data['latitude'])
+                            lon = float(data['longitude'])
+                            timestamp = data.get('timestamp', datetime.now().isoformat())
+                            
+                            # Update sheep data
+                            self.sheep_data[sheep_id] = {
+                                'sheep_id': sheep_id,
+                                'latitude': lat,
+                                'longitude': lon,
+                                'timestamp': timestamp,
+                                'last_update': time.time()
+                            }
+                            
+                            # Check for alerts
+                            alert = self.check_isolation(sheep_id)
+                            
+                            # Prepare message for WebSocket clients
+                            ws_message = {
+                                'sheep_id': sheep_id,
+                                'latitude': lat,
+                                'longitude': lon,
+                                'timestamp': timestamp,
+                                'alert': alert
+                            }
+                            
+                            # Broadcast to all connected clients
+                            asyncio.run_coroutine_threadsafe(
+                                self.broadcast(ws_message), 
+                                asyncio.get_event_loop()
+                            )
+                            
+                        except Exception as e:
+                            logger.error(f"Error processing message: {e}")
+                            continue
+                            
+                except Exception as e:
+                    logger.error(f"Kafka consumer error: {e}")
+                    
+            # Start consumer in thread
+            consumer_thread = Thread(target=consume, daemon=True)
+            consumer_thread.start()
+            logger.info("🐑 Kafka consumer started in background")
+            
+        def check_isolation(self, sheep_id):
+            """Check if a sheep is isolated from the herd"""
+            if len(self.sheep_data) < 2:
+                return False
+                
+            current_sheep = self.sheep_data[sheep_id]
+            current_lat = current_sheep['latitude']
+            current_lon = current_sheep['longitude']
+            
+            min_distance = float('inf')
+            
+            for other_id, other_data in self.sheep_data.items():
+                if other_id == sheep_id:
+                    continue
+                    
+                distance = self.distance_m(
+                    current_lat, current_lon,
+                    other_data['latitude'], other_data['longitude']
+                )
+                
+                min_distance = min(min_distance, distance)
+                
+            is_alert = min_distance > self.distance_threshold
+            
+            if is_alert:
+                self.alerts.add(sheep_id)
+                logger.info(f"🚨 ALERT: {sheep_id} is {min_distance:.0f}m from nearest sheep")
+            else:
+                self.alerts.discard(sheep_id)
+                
+            return is_alert
+            
+        async def broadcast(self, message):
+            """Broadcast message to all connected clients"""
+            if self.clients:
+                message_str = json.dumps(message)
+                disconnected = set()
+                
+                for client in self.clients:
+                    try:
+                        await client.send(message_str)
+                    except websockets.exceptions.ConnectionClosed:
+                        disconnected.add(client)
+                    except Exception as e:
+                        logger.error(f"Error sending to client: {e}")
+                        disconnected.add(client)
+                        
+                self.clients -= disconnected
+                
+        async def handle_client(self, websocket, path):
+            """Handle new WebSocket client connection"""
+            logger.info(f"🌐 New client connected")
+            self.clients.add(websocket)
+            
+            try:
+                for sheep_id, data in self.sheep_data.items():
+                    alert = sheep_id in self.alerts
+                    message = {
+                        'sheep_id': sheep_id,
+                        'latitude': data['latitude'],
+                        'longitude': data['longitude'],
+                        'timestamp': data['timestamp'],
+                        'alert': alert
+                    }
+                    await websocket.send(json.dumps(message))
+                    
+                async for message in websocket:
+                    logger.info(f"Received from client: {message}")
+                    
+            except websockets.exceptions.ConnectionClosed:
+                logger.info("🔌 Client disconnected")
+            except Exception as e:
+                logger.error(f"Error handling client: {e}")
+            finally:
+                self.clients.discard(websocket)
+                
+        async def start_server(self, host="0.0.0.0", port=8080):
+            """Start the WebSocket server"""
+            logger.info(f"🚀 Starting WebSocket server on {host}:{port}")
+            
+            self.start_kafka_consumer()
+            
+            server = await websockets.serve(self.handle_client, host, port)
+            logger.info("✅ WebSocket server started, waiting for clients...")
+            
+            return server
+
+    async def main():
+        server_instance = SheepWebSocketServer()
+        server = await server_instance.start_server()
+        
+        try:
+            await server.wait_closed()
+        except KeyboardInterrupt:
+            logger.info("🛑 Shutting down server...")
+            server.close()
+            await server.wait_closed()
+
+    if __name__ == "__main__":
+        asyncio.run(main())
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: websocket-server-service
+  namespace: iot-apps
+spec:
+  selector:
+    app: websocket-server
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+  type: ClusterIP
+---
+# Web Dashboard Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-dashboard
+  namespace: iot-apps
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: web-dashboard
+  template:
+    metadata:
+      labels:
+        app: web-dashboard
+    spec:
+      containers:
+      - name: web-dashboard
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: dashboard-html
+          mountPath: /usr/share/nginx/html
+        - name: nginx-config
+          mountPath: /etc/nginx/nginx.conf
+          subPath: nginx.conf
+      volumes:
+      - name: dashboard-html
+        configMap:
+          name: dashboard-html
+      - name: nginx-config
+        configMap:
+          name: nginx-config
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+  namespace: iot-apps
+data:
+  nginx.conf: |
+    events {
+        worker_connections 1024;
+    }
+    http {
+        include /etc/nginx/mime.types;
+        default_type application/octet-stream;
+        
+        server {
+            listen 80;
+            location / {
+                root /usr/share/nginx/html;
+                index index.html;
+                try_files $uri $uri/ =404;
+            }
+            
+            # Proxy WebSocket connections
+            location /ws {
+                proxy_pass http://websocket-server-service:8080;
+                proxy_http_version 1.1;
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection "upgrade";
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+            }
+        }
+    }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dashboard-html
+  namespace: iot-apps
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>🐑 AI Shepherd - Real-time Sheep Tracking</title>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+
+            body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                height: 100vh;
+                overflow: hidden;
+            }
+
+            .header {
+                background: rgba(0, 0, 0, 0.2);
+                padding: 1rem;
+                backdrop-filter: blur(10px);
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            }
+
+            .header h1 {
+                font-size: 2rem;
+                text-align: center;
+                text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            }
+
+            .main-container {
+                display: flex;
+                height: calc(100vh - 80px);
+            }
+
+            .map-container {
+                flex: 1;
+                position: relative;
+                margin: 1rem;
+                border-radius: 15px;
+                overflow: hidden;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            }
+
+            #map {
+                height: 100%;
+                width: 100%;
+            }
+
+            .sidebar {
+                width: 350px;
+                background: rgba(0, 0, 0, 0.2);
+                backdrop-filter: blur(10px);
+                padding: 1rem;
+                border-left: 1px solid rgba(255, 255, 255, 0.1);
+                overflow-y: auto;
+            }
+
+            .stats-card {
+                background: rgba(255, 255, 255, 0.1);
+                border-radius: 10px;
+                padding: 1rem;
+                margin-bottom: 1rem;
+                backdrop-filter: blur(5px);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+            }
+
+            .stats-card h3 {
+                margin-bottom: 0.5rem;
+                color: #ffd700;
+            }
+
+            .sheep-list {
+                max-height: 400px;
+                overflow-y: auto;
+            }
+
+            .sheep-item {
+                background: rgba(255, 255, 255, 0.05);
+                border-radius: 8px;
+                padding: 0.8rem;
+                margin-bottom: 0.5rem;
+                border-left: 4px solid #4CAF50;
+                transition: all 0.3s ease;
+                cursor: pointer;
+            }
+
+            .sheep-item:hover {
+                background: rgba(255, 255, 255, 0.1);
+                transform: translateX(5px);
+            }
+
+            .sheep-item.alert {
+                border-left-color: #ff4444;
+                background: rgba(255, 68, 68, 0.1);
+                animation: pulse 2s infinite;
+            }
+
+            @keyframes pulse {
+                0%, 100% { transform: scale(1); }
+                50% { transform: scale(1.02); }
+            }
+
+            .sheep-status {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 0.3rem;
+            }
+
+            .sheep-coords {
+                font-size: 0.8rem;
+                opacity: 0.8;
+            }
+
+            .connection-status {
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                z-index: 1000;
+                background: rgba(0, 0, 0, 0.7);
+                color: white;
+                padding: 0.5rem 1rem;
+                border-radius: 20px;
+                font-size: 0.9rem;
+            }
+
+            .connected { background: rgba(76, 175, 80, 0.8) !important; }
+            .disconnected { background: rgba(244, 67, 54, 0.8) !important; }
+
+            .leaflet-popup-content-wrapper {
+                background: rgba(0, 0, 0, 0.8);
+                color: white;
+                border-radius: 10px;
+            }
+
+            .leaflet-popup-content {
+                color: white;
+                text-align: center;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <h1>🐑 AI Shepherd - Real-time Sheep Tracking</h1>
+        </div>
+
+        <div class="main-container">
+            <div class="map-container">
+                <div id="connection-status" class="connection-status disconnected">
+                    ⚡ Connecting to WebSocket...
+                </div>
+                <div id="map"></div>
+            </div>
+
+            <div class="sidebar">
+                <div class="stats-card">
+                    <h3>📊 Flock Statistics</h3>
+                    <p>Total Sheep: <span id="total-sheep">0</span></p>
+                    <p>Active Alerts: <span id="active-alerts">0</span></p>
+                    <p>Last Update: <span id="last-update">Never</span></p>
+                    <p>Messages Received: <span id="message-count">0</span></p>
+                </div>
+
+                <div class="stats-card">
+                    <h3>🐑 Sheep Status</h3>
+                    <div id="sheep-list" class="sheep-list">
+                        <!-- Sheep items will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+        <script>
+            class SheepTracker {
+                constructor() {
+                    this.map = null;
+                    this.sheep = new Map();
+                    this.markers = new Map();
+                    this.alerts = new Set();
+                    this.messageCount = 0;
+                    this.ws = null;
+                    
+                    this.initMap();
+                    this.connectWebSocket();
+                }
+
+                initMap() {
+                    this.map = L.map('map').setView([31.0000, -7.0000], 13);
+                    
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '© OpenStreetMap contributors'
+                    }).addTo(this.map);
+
+                    this.safeZone = L.circle([31.0000, -7.0000], {
+                        color: 'green',
+                        fillColor: '#4CAF50',
+                        fillOpacity: 0.1,
+                        radius: 500
+                    }).addTo(this.map);
+                }
+
+                connectWebSocket() {
+                    try {
+                        // Use relative WebSocket URL for Kubernetes
+                        const wsUrl = `ws://${window.location.host}/ws`;
+                        this.ws = new WebSocket(wsUrl);
+                        
+                        this.ws.onopen = () => {
+                            this.updateConnectionStatus(true);
+                            console.log('WebSocket connected');
+                        };
+
+                        this.ws.onmessage = (event) => {
+                            const data = JSON.parse(event.data);
+                            this.updateSheep(data);
+                        };
+
+                        this.ws.onclose = () => {
+                            this.updateConnectionStatus(false);
+                            console.log('WebSocket disconnected');
+                            setTimeout(() => this.connectWebSocket(), 5000);
+                        };
+
+                        this.ws.onerror = (error) => {
+                            console.error('WebSocket error:', error);
+                            this.updateConnectionStatus(false);
+                        };
+                    } catch (error) {
+                        console.error('Failed to connect WebSocket:', error);
+                        this.updateConnectionStatus(false);
+                    }
+                }
+
+                updateConnectionStatus(connected) {
+                    const status = document.getElementById('connection-status');
+                    status.textContent = connected ? '✅ Connected' : '❌ Disconnected';
+                    status.className = `connection-status ${connected ? 'connected' : 'disconnected'}`;
+                }
+
+                updateSheep(data) {
+                    const { sheep_id, latitude, longitude, timestamp, alert } = data;
+                    
+                    this.messageCount++;
+                    
+                    this.sheep.set(sheep_id, {
+                        id: sheep_id,
+                        lat: parseFloat(latitude),
+                        lng: parseFloat(longitude),
+                        timestamp: timestamp || new Date().toISOString(),
+                        alert: alert || false,
+                        lastSeen: Date.now()
+                    });
+
+                    this.updateMarker(sheep_id);
+                    this.updateStats();
+                    this.updateSheepList();
+                    
+                    if (this.sheep.size === 1) {
+                        this.map.setView([parseFloat(latitude), parseFloat(longitude)], 15);
+                    }
+                }
+
+                updateMarker(sheepId) {
+                    const sheep = this.sheep.get(sheepId);
+                    if (!sheep) return;
+
+                    const isAlert = sheep.alert;
+                    const icon = L.divIcon({
+                        html: isAlert ? '🚨' : '🐑',
+                        iconSize: [30, 30],
+                        className: 'sheep-marker'
+                    });
+
+                    if (this.markers.has(sheepId)) {
+                        const marker = this.markers.get(sheepId);
+                        marker.setLatLng([sheep.lat, sheep.lng]);
+                        marker.setIcon(icon);
+                    } else {
+                        const marker = L.marker([sheep.lat, sheep.lng], { icon })
+                            .addTo(this.map)
+                            .bindPopup(`
+                                <strong>${sheepId}</strong><br>
+                                Lat: ${sheep.lat.toFixed(6)}<br>
+                                Lng: ${sheep.lng.toFixed(6)}<br>
+                                Status: ${isAlert ? '🚨 ALERT' : '✅ OK'}<br>
+                                Last seen: ${new Date(sheep.timestamp).toLocaleTimeString()}
+                            `);
+                        
+                        this.markers.set(sheepId, marker);
+                    }
+
+                    if (isAlert) {
+                        this.alerts.add(sheepId);
+                    } else {
+                        this.alerts.delete(sheepId);
+                    }
+                }
+
+                updateStats() {
+                    document.getElementById('total-sheep').textContent = this.sheep.size;
+                    document.getElementById('active-alerts').textContent = this.alerts.size;
+                    document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
+                    document.getElementById('message-count').textContent = this.messageCount;
+                }
+
+                updateSheepList() {
+                    const listContainer = document.getElementById('sheep-list');
+                    listContainer.innerHTML = '';
+
+                    Array.from(this.sheep.values())
+                        .sort((a, b) => a.id.localeCompare(b.id))
+                        .forEach(sheep => {
+                            const div = document.createElement('div');
+                            div.className = `sheep-item ${sheep.alert ? 'alert' : ''}`;
+                            div.innerHTML = `
+                                <div class="sheep-status">
+                                    <strong>${sheep.id}</strong>
+                                    <span>${sheep.alert ? '🚨 ALERT' : '✅ OK'}</span>
+                                </div>
+                                <div class="sheep-coords">
+                                    ${sheep.lat.toFixed(6)}, ${sheep.lng.toFixed(6)}
+                                </div>
+                            `;
+                            
+                            div.onclick = () => {
+                                this.map.setView([sheep.lat, sheep.lng], 18);
+                                this.markers.get(sheep.id).openPopup();
+                            };
+                            
+                            listContainer.appendChild(div);
+                        });
+                }
+            }
+
+            document.addEventListener('DOMContentLoaded', () => {
+                new SheepTracker();
+            });
+        </script>
+    </body>
+    </html>
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-dashboard-service
+  namespace: iot-apps
+spec:
+  selector:
+    app: web-dashboard
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+  type: LoadBalancer  # Change to NodePort if LoadBalancer not available

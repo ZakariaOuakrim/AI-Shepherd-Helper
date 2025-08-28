@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: iot-consumer
+  namespace: iot-apps
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: iot-consumer
+  template:
+    metadata:
+      labels:
+        app: iot-consumer
+    spec:
+      containers:
+      - name: iot-consumer
+        image: knn:latest
+        imagePullPolicy: Never  # Because you're building locally in cluster
+
+        env:
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          value: "kafka-headless.kafka.svc.cluster.local:9092"
+        - name: KAFKA_TOPIC
+          value: "iot-sensor-data"
+        - name: KAFKA_CONSUMER_GROUP
+          value: "sheep-monitor-group"
+        - name: CHECK_INTERVAL
+          value: "10"   # seconds between anomaly checks
+        - name: DISTANCE_THRESHOLD
+          value: "500"  # meters
+        - name: K_NEIGHBORS
+          value: "3"
+
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"

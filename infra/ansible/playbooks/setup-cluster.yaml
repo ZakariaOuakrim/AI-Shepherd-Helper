@@ -1,0 +1,133 @@
+---
+  - name: Setup IOT big data cluster
+    hosts: kubernetes
+    gather_facts: false
+    vars:
+      cluster_name: "{{cluster_name | default('iot-bigdata-cluster')}}"
+    tasks:
+      - name: Create namespaces
+        kubernetes.core.k8s:
+          name: "{{ item }}"
+          api_version: v1
+          kind: Namespace
+          state: present
+          kubeconfig: ~/.kube/config
+        loop:
+          - kafka
+          - databases
+          - iot-apps
+          - monitoring
+          - streaming
+        tags: namespaces
+
+      - name: Apply Zookeeper resources first
+        kubernetes.core.k8s:
+          state: present
+          src: "../../kubernetes/kafka/zookeeper.yaml"
+          kubeconfig: ~/.kube/config
+        tags: zookeeper
+
+      - name: Wait for Zookeeper to be ready
+        kubernetes.core.k8s_info:
+          api_version: apps/v1
+          kind: StatefulSet
+          namespace: kafka
+          name: zookeeper
+          kubeconfig: ~/.kube/config
+          wait_condition:
+            status: "True"
+            type: Ready
+          wait_timeout: 300
+        tags: zookeeper
+
+      - name: Apply Kafka resources
+        kubernetes.core.k8s:
+          state: present
+          src: "../../kubernetes/kafka/kafka.yaml"
+          kubeconfig: ~/.kube/config
+        tags: kafka
+
+      - name: Apply IoT apps resources
+        kubernetes.core.k8s:
+          state: present
+          src: "{{ item }}"
+          kubeconfig: ~/.kube/config
+        with_fileglob:
+          - "../../kubernetes/producer-consumer/*.yaml"
+        tags: iot-apps
+    # Add this to your existing ansible setup-cluster.yml
+
+      - name: Apply Web Dashboard resources
+        kubernetes.core.k8s:
+          state: present
+          src: "../../kubernetes/web-dashboard/web-dashboard.yaml"
+          kubeconfig: ~/.kube/config
+        tags: web-dashboard
+
+      - name: Wait for WebSocket server to be ready
+        kubernetes.core.k8s_info:
+          api_version: apps/v1
+          kind: Deployment
+          namespace: iot-apps
+          name: websocket-server
+          kubeconfig: ~/.kube/config
+          wait_condition:
+            status: "True"
+            type: Available
+          wait_timeout: 300
+        tags: web-dashboard
+
+      - name: Wait for Web Dashboard to be ready
+        kubernetes.core.k8s_info:
+          api_version: apps/v1
+          kind: Deployment
+          namespace: iot-apps
+          name: web-dashboard
+          kubeconfig: ~/.kube/config
+          wait_condition:
+            status: "True"
+            type: Available
+          wait_timeout: 300
+        tags: web-dashboard
+
+      - name: Get Web Dashboard service details
+        kubernetes.core.k8s_info:
+          api_version: v1
+          kind: Service
+          namespace: iot-apps
+          name: web-dashboard-service
+          kubeconfig: ~/.kube/config
+        register: dashboard_service
+        tags: web-dashboard
+
+      - name: Display Web Dashboard access information
+        debug:
+          msg: |
+            🌐 Web Dashboard deployed successfully!
+            
+            {% if dashboard_service.resources[0].spec.type == 'LoadBalancer' %}
+            Access your dashboard at:
+            {% if dashboard_service.resources[0].status.loadBalancer.ingress is defined %}
+            http://{{ dashboard_service.resources[0].status.loadBalancer.ingress[0].ip }}
+            {% else %}
+            LoadBalancer IP pending... Check with: kubectl get svc web-dashboard-service -n iot-apps
+            {% endif %}
+            {% else %}
+            Access your dashboard via NodePort:
+            kubectl port-forward svc/web-dashboard-service -n iot-apps 8080:80
+            Then open: http://localhost:8080
+            {% endif %}
+            
+            📊 Features:
+            - Real-time sheep tracking on interactive map
+            - Live alerts when sheep are isolated
+            - Distance monitoring and statistics
+            - WebSocket connection status
+            
+            🔧 Troubleshooting:
+            - Check WebSocket server: kubectl logs -f deployment/websocket-server -n iot-apps
+            - Check web dashboard: kubectl logs -f deployment/web-dashboard -n iot-apps
+        tags: web-dashboard
+    
+    
+

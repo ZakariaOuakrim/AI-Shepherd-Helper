@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐑 AI Shepherd - Real-time Sheep Tracking</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .header {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 1rem;
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            text-align: center;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .main-container {
+            display: flex;
+            height: calc(100vh - 80px);
+        }
+
+        .map-container {
+            flex: 1;
+            position: relative;
+            margin: 1rem;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+
+        .sidebar {
+            width: 350px;
+            background: rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            padding: 1rem;
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+            overflow-y: auto;
+        }
+
+        .stats-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .stats-card h3 {
+            margin-bottom: 0.5rem;
+            color: #ffd700;
+        }
+
+        .sheep-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .sheep-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 0.8rem;
+            margin-bottom: 0.5rem;
+            border-left: 4px solid #4CAF50;
+            transition: all 0.3s ease;
+        }
+
+        .sheep-item.alert {
+            border-left-color: #ff4444;
+            background: rgba(255, 68, 68, 0.1);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+
+        .sheep-status {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.3rem;
+        }
+
+        .sheep-coords {
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+
+        .connection-status {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        .connected { background: rgba(76, 175, 80, 0.8) !important; }
+        .disconnected { background: rgba(244, 67, 54, 0.8) !important; }
+
+        .leaflet-popup-content-wrapper {
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            border-radius: 10px;
+        }
+
+        .leaflet-popup-content {
+            color: white;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🐑 AI Shepherd - Real-time Sheep Tracking</h1>
+    </div>
+
+    <div class="main-container">
+        <div class="map-container">
+            <div id="connection-status" class="connection-status disconnected">
+                ⚡ Connecting to WebSocket...
+            </div>
+            <div id="map"></div>
+        </div>
+
+        <div class="sidebar">
+            <div class="stats-card">
+                <h3>📊 Flock Statistics</h3>
+                <p>Total Sheep: <span id="total-sheep">0</span></p>
+                <p>Active Alerts: <span id="active-alerts">0</span></p>
+                <p>Last Update: <span id="last-update">Never</span></p>
+                <p>Messages Received: <span id="message-count">0</span></p>
+            </div>
+
+            <div class="stats-card">
+                <h3>🐑 Sheep Status</h3>
+                <div id="sheep-list" class="sheep-list">
+                    <!-- Sheep items will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+    <script>
+        class SheepTracker {
+            constructor() {
+                this.map = null;
+                this.sheep = new Map();
+                this.markers = new Map();
+                this.alerts = new Set();
+                this.messageCount = 0;
+                this.ws = null;
+                
+                this.initMap();
+                this.connectWebSocket();
+                this.startHeartbeat();
+            }
+
+            initMap() {
+                // Initialize map centered on Morocco (approximate location from your data)
+                this.map = L.map('map').setView([31.0000, -7.0000], 13);
+                
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(this.map);
+
+                // Add a circle to show the "safe zone" (500m radius)
+                this.safeZone = L.circle([31.0000, -7.0000], {
+                    color: 'green',
+                    fillColor: '#4CAF50',
+                    fillOpacity: 0.1,
+                    radius: 500
+                }).addTo(this.map);
+            }
+
+            connectWebSocket() {
+                try {
+                    // Replace with your actual WebSocket endpoint
+                    this.ws = new WebSocket('ws://localhost:8080/sheep-tracker');
+                    
+                    this.ws.onopen = () => {
+                        this.updateConnectionStatus(true);
+                        console.log('WebSocket connected');
+                    };
+
+                    this.ws.onmessage = (event) => {
+                        const data = JSON.parse(event.data);
+                        this.updateSheep(data);
+                    };
+
+                    this.ws.onclose = () => {
+                        this.updateConnectionStatus(false);
+                        console.log('WebSocket disconnected');
+                        // Retry connection after 5 seconds
+                        setTimeout(() => this.connectWebSocket(), 5000);
+                    };
+
+                    this.ws.onerror = (error) => {
+                        console.error('WebSocket error:', error);
+                        this.updateConnectionStatus(false);
+                    };
+                } catch (error) {
+                    console.error('Failed to connect WebSocket:', error);
+                    this.simulateData(); // Fallback to simulation
+                }
+            }
+
+            updateConnectionStatus(connected) {
+                const status = document.getElementById('connection-status');
+                status.textContent = connected ? '✅ Connected' : '❌ Disconnected';
+                status.className = `connection-status ${connected ? 'connected' : 'disconnected'}`;
+            }
+
+            updateSheep(data) {
+                const { sheep_id, latitude, longitude, timestamp, alert } = data;
+                
+                this.messageCount++;
+                
+                // Update sheep data
+                this.sheep.set(sheep_id, {
+                    id: sheep_id,
+                    lat: parseFloat(latitude),
+                    lng: parseFloat(longitude),
+                    timestamp: timestamp || new Date().toISOString(),
+                    alert: alert || false,
+                    lastSeen: Date.now()
+                });
+
+                // Update or create marker
+                this.updateMarker(sheep_id);
+                
+                // Update UI
+                this.updateStats();
+                this.updateSheepList();
+                
+                // Auto-center map if this is the first sheep
+                if (this.sheep.size === 1) {
+                    this.map.setView([parseFloat(latitude), parseFloat(longitude)], 15);
+                }
+            }
+
+            updateMarker(sheepId) {
+                const sheep = this.sheep.get(sheepId);
+                if (!sheep) return;
+
+                const isAlert = sheep.alert;
+                const icon = L.divIcon({
+                    html: isAlert ? '🚨' : '🐑',
+                    iconSize: [30, 30],
+                    className: 'sheep-marker'
+                });
+
+                if (this.markers.has(sheepId)) {
+                    // Update existing marker
+                    const marker = this.markers.get(sheepId);
+                    marker.setLatLng([sheep.lat, sheep.lng]);
+                    marker.setIcon(icon);
+                } else {
+                    // Create new marker
+                    const marker = L.marker([sheep.lat, sheep.lng], { icon })
+                        .addTo(this.map)
+                        .bindPopup(`
+                            <strong>${sheepId}</strong><br>
+                            Lat: ${sheep.lat.toFixed(6)}<br>
+                            Lng: ${sheep.lng.toFixed(6)}<br>
+                            Status: ${isAlert ? '🚨 ALERT' : '✅ OK'}<br>
+                            Last seen: ${new Date(sheep.timestamp).toLocaleTimeString()}
+                        `);
+                    
+                    this.markers.set(sheepId, marker);
+                }
+
+                // Update alerts
+                if (isAlert) {
+                    this.alerts.add(sheepId);
+                } else {
+                    this.alerts.delete(sheepId);
+                }
+            }
+
+            updateStats() {
+                document.getElementById('total-sheep').textContent = this.sheep.size;
+                document.getElementById('active-alerts').textContent = this.alerts.size;
+                document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
+                document.getElementById('message-count').textContent = this.messageCount;
+            }
+
+            updateSheepList() {
+                const listContainer = document.getElementById('sheep-list');
+                listContainer.innerHTML = '';
+
+                Array.from(this.sheep.values())
+                    .sort((a, b) => a.id.localeCompare(b.id))
+                    .forEach(sheep => {
+                        const div = document.createElement('div');
+                        div.className = `sheep-item ${sheep.alert ? 'alert' : ''}`;
+                        div.innerHTML = `
+                            <div class="sheep-status">
+                                <strong>${sheep.id}</strong>
+                                <span>${sheep.alert ? '🚨 ALERT' : '✅ OK'}</span>
+                            </div>
+                            <div class="sheep-coords">
+                                ${sheep.lat.toFixed(6)}, ${sheep.lng.toFixed(6)}
+                            </div>
+                        `;
+                        
+                        div.onclick = () => {
+                            this.map.setView([sheep.lat, sheep.lng], 18);
+                            this.markers.get(sheep.id).openPopup();
+                        };
+                        
+                        listContainer.appendChild(div);
+                    });
+            }
+
+            startHeartbeat() {
+                setInterval(() => {
+                    // Remove stale sheep (not seen for 5 minutes)
+                    const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
+                    
+                    this.sheep.forEach((sheep, id) => {
+                        if (sheep.lastSeen < fiveMinutesAgo) {
+                            this.sheep.delete(id);
+                            if (this.markers.has(id)) {
+                                this.map.removeLayer(this.markers.get(id));
+                                this.markers.delete(id);
+                            }
+                            this.alerts.delete(id);
+                        }
+                    });
+                    
+                    this.updateStats();
+                    this.updateSheepList();
+                }, 30000); // Check every 30 seconds
+            }
+
+            // Simulate data for testing (remove when WebSocket is working)
+            simulateData() {
+                console.log('Starting data simulation...');
+                this.updateConnectionStatus(false);
+                
+                const baseData = [
+                    { sheep_id: 'Sheep_1', latitude: 31.010530, longitude: -7.012203, alert: true },
+                    { sheep_id: 'Sheep_2', latitude: 31.000002, longitude: -7.000008, alert: false },
+                    { sheep_id: 'Sheep_3', latitude: 31.000015, longitude: -7.000012, alert: false },
+                    { sheep_id: 'Sheep_4', latitude: 30.999998, longitude: -7.000005, alert: false },
+                    { sheep_id: 'Sheep_5', latitude: 31.000020, longitude: -6.999995, alert: false }
+                ];
+
+                setInterval(() => {
+                    baseData.forEach(data => {
+                        // Add some random movement
+                        const newData = {
+                            ...data,
+                            latitude: data.latitude + (Math.random() - 0.5) * 0.0001,
+                            longitude: data.longitude + (Math.random() - 0.5) * 0.0001,
+                            timestamp: new Date().toISOString()
+                        };
+                        this.updateSheep(newData);
+                    });
+                }, 2000);
+            }
+        }
+
+        // Initialize the tracker when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new SheepTracker();
+        });
+    </script>
+</body>
+</html>

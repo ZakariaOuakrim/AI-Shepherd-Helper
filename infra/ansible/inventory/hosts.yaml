@@ -1,0 +1,7 @@
+all:
+  children:
+    kubernetes:
+      hosts:
+        localhost:
+          ansible_connection: local
+          cluster_name: iot-bigdata-cluster
