@@ -24,13 +24,21 @@ spec:
         - -c
         - |
           pip install kafka-python websockets numpy
-          python /app/websocket_server.py
+          cd /app
+          python websocket_server.py
         volumeMounts:
         - name: app-code
           mountPath: /app
         env:
         - name: PYTHONUNBUFFERED
           value: "1"
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
       volumes:
       - name: app-code
         configMap:
@@ -68,6 +76,7 @@ data:
             self.alerts = set()
             self.consumer = None
             self.distance_threshold = 500
+            self.kafka_connected = False
             
         def distance_m(self, lat1, lon1, lat2, lon2):
             """Calculate distance in meters between two GPS coordinates."""
@@ -81,77 +90,134 @@ data:
         def start_kafka_consumer(self):
             """Start consuming from Kafka in a separate thread"""
             def consume():
-                try:
-                    self.consumer = KafkaConsumer(
-                        "sheep-topic",
-                        bootstrap_servers=[
-                            "kafka-0.kafka-headless.kafka.svc.cluster.local:9092",
-                            "kafka-1.kafka-headless.kafka.svc.cluster.local:9092"
-                        ],
-                        auto_offset_reset="latest",  # Only get new messages
-                        group_id="websocket-server",
-                        value_deserializer=None
-                    )
-                    
-                    logger.info("✅ Connected to Kafka")
-                    
-                    for message in self.consumer:
-                        try:
-                            # Parse message
-                            raw_value = message.value
-                            if raw_value is None or len(raw_value) == 0:
+                retry_count = 0
+                max_retries = 5
+                
+                while retry_count < max_retries:
+                    try:
+                        self.consumer = KafkaConsumer(
+                            "sheep-topic",
+                            bootstrap_servers=[
+                                "kafka-0.kafka-headless.kafka.svc.cluster.local:9092",
+                                "kafka-1.kafka-headless.kafka.svc.cluster.local:9092"
+                            ],
+                            auto_offset_reset="latest",
+                            group_id="websocket-server",
+                            value_deserializer=None,
+                            consumer_timeout_ms=10000
+                        )
+                        
+                        logger.info("Connected to Kafka")
+                        self.kafka_connected = True
+                        retry_count = 0  # Reset on successful connection
+                        
+                        for message in self.consumer:
+                            try:
+                                raw_value = message.value
+                                if raw_value is None or len(raw_value) == 0:
+                                    continue
+                                    
+                                json_str = raw_value.decode('utf-8')
+                                data = json.loads(json_str)
+                                
+                                if not all(key in data for key in ['sheep_id', 'latitude', 'longitude']):
+                                    continue
+                                    
+                                sheep_id = data['sheep_id']
+                                lat = float(data['latitude'])
+                                lon = float(data['longitude'])
+                                timestamp = data.get('timestamp', datetime.now().isoformat())
+                                
+                                self.sheep_data[sheep_id] = {
+                                    'sheep_id': sheep_id,
+                                    'latitude': lat,
+                                    'longitude': lon,
+                                    'timestamp': timestamp,
+                                    'last_update': time.time()
+                                }
+                                
+                                alert = self.check_isolation(sheep_id)
+                                
+                                ws_message = {
+                                    'sheep_id': sheep_id,
+                                    'latitude': lat,
+                                    'longitude': lon,
+                                    'timestamp': timestamp,
+                                    'alert': alert
+                                }
+                                
+                                asyncio.run_coroutine_threadsafe(
+                                    self.broadcast(ws_message), 
+                                    asyncio.get_event_loop()
+                                )
+                                
+                            except Exception as e:
+                                logger.error(f"Error processing message: {e}")
                                 continue
                                 
-                            json_str = raw_value.decode('utf-8')
-                            data = json.loads(json_str)
-                            
-                            # Validate required fields
-                            if not all(key in data for key in ['sheep_id', 'latitude', 'longitude']):
-                                continue
-                                
-                            sheep_id = data['sheep_id']
-                            lat = float(data['latitude'])
-                            lon = float(data['longitude'])
-                            timestamp = data.get('timestamp', datetime.now().isoformat())
-                            
-                            # Update sheep data
-                            self.sheep_data[sheep_id] = {
-                                'sheep_id': sheep_id,
-                                'latitude': lat,
-                                'longitude': lon,
-                                'timestamp': timestamp,
-                                'last_update': time.time()
-                            }
-                            
-                            # Check for alerts
-                            alert = self.check_isolation(sheep_id)
-                            
-                            # Prepare message for WebSocket clients
-                            ws_message = {
-                                'sheep_id': sheep_id,
-                                'latitude': lat,
-                                'longitude': lon,
-                                'timestamp': timestamp,
-                                'alert': alert
-                            }
-                            
-                            # Broadcast to all connected clients
-                            asyncio.run_coroutine_threadsafe(
-                                self.broadcast(ws_message), 
-                                asyncio.get_event_loop()
-                            )
-                            
-                        except Exception as e:
-                            logger.error(f"Error processing message: {e}")
-                            continue
-                            
-                except Exception as e:
-                    logger.error(f"Kafka consumer error: {e}")
+                    except Exception as e:
+                        logger.error(f"Kafka consumer error: {e}")
+                        self.kafka_connected = False
+                        retry_count += 1
+                        if retry_count < max_retries:
+                            logger.info(f"Retrying Kafka connection in 5 seconds... ({retry_count}/{max_retries})")
+                            time.sleep(5)
+                        else:
+                            logger.error("Max Kafka retries exceeded, starting simulation mode")
+                            break
+                
+                # Start simulation if Kafka fails completely
+                if not self.kafka_connected:
+                    self.simulate_data()
                     
-            # Start consumer in thread
             consumer_thread = Thread(target=consume, daemon=True)
             consumer_thread.start()
-            logger.info("🐑 Kafka consumer started in background")
+            logger.info("Kafka consumer started")
+            
+        def simulate_data(self):
+            """Simulate data for testing"""
+            logger.info("Starting data simulation...")
+            
+            def simulate():
+                base_data = [
+                    {'sheep_id': 'Sheep_1', 'latitude': 31.010530, 'longitude': -7.012203, 'alert': True},
+                    {'sheep_id': 'Sheep_2', 'latitude': 31.000002, 'longitude': -7.000008, 'alert': False},
+                    {'sheep_id': 'Sheep_3', 'latitude': 31.000015, 'longitude': -7.000012, 'alert': False},
+                    {'sheep_id': 'Sheep_4', 'latitude': 30.999998, 'longitude': -7.000005, 'alert': False},
+                    {'sheep_id': 'Sheep_5', 'latitude': 31.000020, 'longitude': -6.999995, 'alert': False}
+                ]
+                
+                while True:
+                    for data in base_data:
+                        # Add random movement
+                        new_data = {
+                            **data,
+                            'latitude': data['latitude'] + (np.random.random() - 0.5) * 0.0001,
+                            'longitude': data['longitude'] + (np.random.random() - 0.5) * 0.0001,
+                            'timestamp': datetime.now().isoformat()
+                        }
+                        
+                        # Update sheep data for isolation checking
+                        self.sheep_data[new_data['sheep_id']] = {
+                            'sheep_id': new_data['sheep_id'],
+                            'latitude': new_data['latitude'],
+                            'longitude': new_data['longitude'],
+                            'timestamp': new_data['timestamp'],
+                            'last_update': time.time()
+                        }
+                        
+                        # Check isolation for simulation
+                        alert = self.check_isolation(new_data['sheep_id'])
+                        new_data['alert'] = alert
+                        
+                        asyncio.run_coroutine_threadsafe(
+                            self.broadcast(new_data),
+                            asyncio.get_event_loop()
+                        )
+                    
+                    time.sleep(3)
+            
+            Thread(target=simulate, daemon=True).start()
             
         def check_isolation(self, sheep_id):
             """Check if a sheep is isolated from the herd"""
@@ -179,7 +245,7 @@ data:
             
             if is_alert:
                 self.alerts.add(sheep_id)
-                logger.info(f"🚨 ALERT: {sheep_id} is {min_distance:.0f}m from nearest sheep")
+                logger.info(f"ALERT: {sheep_id} is {min_distance:.0f}m from nearest sheep")
             else:
                 self.alerts.discard(sheep_id)
                 
@@ -204,10 +270,11 @@ data:
                 
         async def handle_client(self, websocket, path):
             """Handle new WebSocket client connection"""
-            logger.info(f"🌐 New client connected")
+            logger.info(f"New client connected from {websocket.remote_address}")
             self.clients.add(websocket)
             
             try:
+                # Send current sheep data to new client
                 for sheep_id, data in self.sheep_data.items():
                     alert = sheep_id in self.alerts
                     message = {
@@ -219,11 +286,19 @@ data:
                     }
                     await websocket.send(json.dumps(message))
                     
+                # Send connection status
+                status_message = {
+                    'type': 'status',
+                    'kafka_connected': self.kafka_connected,
+                    'simulation_mode': not self.kafka_connected
+                }
+                await websocket.send(json.dumps(status_message))
+                    
                 async for message in websocket:
                     logger.info(f"Received from client: {message}")
                     
             except websockets.exceptions.ConnectionClosed:
-                logger.info("🔌 Client disconnected")
+                logger.info("Client disconnected")
             except Exception as e:
                 logger.error(f"Error handling client: {e}")
             finally:
@@ -231,12 +306,12 @@ data:
                 
         async def start_server(self, host="0.0.0.0", port=8080):
             """Start the WebSocket server"""
-            logger.info(f"🚀 Starting WebSocket server on {host}:{port}")
+            logger.info(f"Starting WebSocket server on {host}:{port}")
             
             self.start_kafka_consumer()
             
             server = await websockets.serve(self.handle_client, host, port)
-            logger.info("✅ WebSocket server started, waiting for clients...")
+            logger.info("WebSocket server started")
             
             return server
 
@@ -247,7 +322,7 @@ data:
         try:
             await server.wait_closed()
         except KeyboardInterrupt:
-            logger.info("🛑 Shutting down server...")
+            logger.info("Shutting down server...")
             server.close()
             await server.wait_closed()
 
@@ -257,7 +332,16 @@ data:
 apiVersion: v1
 kind: Service
 metadata:
-  name: websocket-server-service
+  name: web-dashboard-service
+  namespace: iot-apps
+spec:
+  selector:
+    app: web-dashboard
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+  type: ClusterIPsocket-server-service
   namespace: iot-apps
 spec:
   selector:
@@ -295,6 +379,13 @@ spec:
         - name: nginx-config
           mountPath: /etc/nginx/nginx.conf
           subPath: nginx.conf
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
       volumes:
       - name: dashboard-html
         configMap:
@@ -335,6 +426,7 @@ data:
                 proxy_set_header X-Real-IP $remote_addr;
                 proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
                 proxy_set_header X-Forwarded-Proto $scheme;
+                proxy_read_timeout 86400;
             }
         }
     }
@@ -351,7 +443,7 @@ data:
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>🐑 AI Shepherd - Real-time Sheep Tracking</title>
+        <title>AI Shepherd - Real-time Sheep Tracking</title>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
         <style>
             * {
@@ -480,6 +572,7 @@ data:
 
             .connected { background: rgba(76, 175, 80, 0.8) !important; }
             .disconnected { background: rgba(244, 67, 54, 0.8) !important; }
+            .simulation { background: rgba(255, 193, 7, 0.8) !important; }
 
             .leaflet-popup-content-wrapper {
                 background: rgba(0, 0, 0, 0.8);
@@ -491,37 +584,60 @@ data:
                 color: white;
                 text-align: center;
             }
+
+            .error-message {
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: rgba(255, 0, 0, 0.9);
+                color: white;
+                padding: 2rem;
+                border-radius: 10px;
+                text-align: center;
+                z-index: 10000;
+                display: none;
+            }
         </style>
     </head>
     <body>
         <div class="header">
-            <h1>🐑 AI Shepherd - Real-time Sheep Tracking</h1>
+            <h1>AI Shepherd - Real-time Sheep Tracking</h1>
         </div>
 
         <div class="main-container">
             <div class="map-container">
                 <div id="connection-status" class="connection-status disconnected">
-                    ⚡ Connecting to WebSocket...
+                    Connecting...
                 </div>
                 <div id="map"></div>
             </div>
 
             <div class="sidebar">
                 <div class="stats-card">
-                    <h3>📊 Flock Statistics</h3>
+                    <h3>Flock Statistics</h3>
                     <p>Total Sheep: <span id="total-sheep">0</span></p>
                     <p>Active Alerts: <span id="active-alerts">0</span></p>
                     <p>Last Update: <span id="last-update">Never</span></p>
                     <p>Messages Received: <span id="message-count">0</span></p>
+                    <p>Mode: <span id="data-mode">Unknown</span></p>
                 </div>
 
                 <div class="stats-card">
-                    <h3>🐑 Sheep Status</h3>
+                    <h3>Sheep Status</h3>
                     <div id="sheep-list" class="sheep-list">
-                        <!-- Sheep items will be populated here -->
+                        <p style="opacity: 0.6; text-align: center; margin: 2rem 0;">
+                            Waiting for sheep data...
+                        </p>
                     </div>
                 </div>
             </div>
+        </div>
+
+        <div id="error-message" class="error-message">
+            <h3>Connection Error</h3>
+            <p>Unable to connect to WebSocket server.</p>
+            <button onclick="location.reload()">Retry</button>
         </div>
 
         <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
@@ -534,6 +650,9 @@ data:
                     this.alerts = new Set();
                     this.messageCount = 0;
                     this.ws = null;
+                    this.reconnectAttempts = 0;
+                    this.maxReconnectAttempts = 10;
+                    this.isSimulationMode = false;
                     
                     this.initMap();
                     this.connectWebSocket();
@@ -556,40 +675,86 @@ data:
 
                 connectWebSocket() {
                     try {
-                        // Use relative WebSocket URL for Kubernetes
-                        const wsUrl = `ws://${window.location.host}/ws`;
+                        // Use the correct WebSocket URL for Kubernetes environment
+                        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                        const wsUrl = `${protocol}//${window.location.host}/ws`;
+                        
+                        console.log('Attempting WebSocket connection to:', wsUrl);
                         this.ws = new WebSocket(wsUrl);
                         
                         this.ws.onopen = () => {
-                            this.updateConnectionStatus(true);
+                            this.updateConnectionStatus('connected');
+                            this.reconnectAttempts = 0;
                             console.log('WebSocket connected');
+                            document.getElementById('error-message').style.display = 'none';
                         };
 
                         this.ws.onmessage = (event) => {
-                            const data = JSON.parse(event.data);
-                            this.updateSheep(data);
+                            try {
+                                const data = JSON.parse(event.data);
+                                
+                                if (data.type === 'status') {
+                                    this.isSimulationMode = data.simulation_mode;
+                                    document.getElementById('data-mode').textContent = 
+                                        data.kafka_connected ? 'Kafka' : 'Simulation';
+                                } else {
+                                    this.updateSheep(data);
+                                }
+                            } catch (e) {
+                                console.error('Error parsing message:', e);
+                            }
                         };
 
                         this.ws.onclose = () => {
-                            this.updateConnectionStatus(false);
+                            this.updateConnectionStatus('disconnected');
                             console.log('WebSocket disconnected');
-                            setTimeout(() => this.connectWebSocket(), 5000);
+                            
+                            if (this.reconnectAttempts < this.maxReconnectAttempts) {
+                                this.reconnectAttempts++;
+                                const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
+                                console.log(`Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts})`);
+                                setTimeout(() => this.connectWebSocket(), delay);
+                            } else {
+                                console.error('Max reconnection attempts reached');
+                                document.getElementById('error-message').style.display = 'block';
+                            }
                         };
 
                         this.ws.onerror = (error) => {
                             console.error('WebSocket error:', error);
-                            this.updateConnectionStatus(false);
+                            this.updateConnectionStatus('disconnected');
                         };
+                        
                     } catch (error) {
                         console.error('Failed to connect WebSocket:', error);
-                        this.updateConnectionStatus(false);
+                        this.updateConnectionStatus('disconnected');
+                        document.getElementById('error-message').style.display = 'block';
                     }
                 }
 
-                updateConnectionStatus(connected) {
-                    const status = document.getElementById('connection-status');
-                    status.textContent = connected ? '✅ Connected' : '❌ Disconnected';
-                    status.className = `connection-status ${connected ? 'connected' : 'disconnected'}`;
+                updateConnectionStatus(status) {
+                    const statusEl = document.getElementById('connection-status');
+                    let statusText = '';
+                    let className = 'connection-status ';
+                    
+                    switch(status) {
+                        case 'connected':
+                            statusText = this.isSimulationMode ? 'Connected (Simulation)' : 'Connected';
+                            className += this.isSimulationMode ? 'simulation' : 'connected';
+                            break;
+                        case 'disconnected':
+                            statusText = this.reconnectAttempts > 0 ? 
+                                `Reconnecting... (${this.reconnectAttempts}/${this.maxReconnectAttempts})` : 
+                                'Disconnected';
+                            className += 'disconnected';
+                            break;
+                        default:
+                            statusText = 'Connecting...';
+                            className += 'disconnected';
+                    }
+                    
+                    statusEl.textContent = statusText;
+                    statusEl.className = className;
                 }
 
                 updateSheep(data) {
@@ -637,7 +802,7 @@ data:
                                 <strong>${sheepId}</strong><br>
                                 Lat: ${sheep.lat.toFixed(6)}<br>
                                 Lng: ${sheep.lng.toFixed(6)}<br>
-                                Status: ${isAlert ? '🚨 ALERT' : '✅ OK'}<br>
+                                Status: ${isAlert ? 'ALERT' : 'OK'}<br>
                                 Last seen: ${new Date(sheep.timestamp).toLocaleTimeString()}
                             `);
                         
@@ -660,6 +825,16 @@ data:
 
                 updateSheepList() {
                     const listContainer = document.getElementById('sheep-list');
+                    
+                    if (this.sheep.size === 0) {
+                        listContainer.innerHTML = `
+                            <p style="opacity: 0.6; text-align: center; margin: 2rem 0;">
+                                Waiting for sheep data...
+                            </p>
+                        `;
+                        return;
+                    }
+                    
                     listContainer.innerHTML = '';
 
                     Array.from(this.sheep.values())
@@ -670,7 +845,7 @@ data:
                             div.innerHTML = `
                                 <div class="sheep-status">
                                     <strong>${sheep.id}</strong>
-                                    <span>${sheep.alert ? '🚨 ALERT' : '✅ OK'}</span>
+                                    <span>${sheep.alert ? 'ALERT' : 'OK'}</span>
                                 </div>
                                 <div class="sheep-coords">
                                     ${sheep.lat.toFixed(6)}, ${sheep.lng.toFixed(6)}
@@ -697,13 +872,4 @@ data:
 apiVersion: v1
 kind: Service
 metadata:
-  name: web-dashboard-service
-  namespace: iot-apps
-spec:
-  selector:
-    app: web-dashboard
-  ports:
-  - port: 80
-    targetPort: 80
-    protocol: TCP
-  type: LoadBalancer  # Change to NodePort if LoadBalancer not available
+  name: web

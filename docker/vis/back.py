@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 WebSocket server that consumes sheep data from Kafka and broadcasts to web clients
 """

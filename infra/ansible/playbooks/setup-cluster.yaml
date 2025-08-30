@@ -1,133 +1,257 @@
 ---
-  - name: Setup IOT big data cluster
-    hosts: kubernetes
-    gather_facts: false
-    vars:
-      cluster_name: "{{cluster_name | default('iot-bigdata-cluster')}}"
-    tasks:
-      - name: Create namespaces
-        kubernetes.core.k8s:
-          name: "{{ item }}"
-          api_version: v1
-          kind: Namespace
-          state: present
-          kubeconfig: ~/.kube/config
-        loop:
-          - kafka
-          - databases
-          - iot-apps
-          - monitoring
-          - streaming
-        tags: namespaces
+- name: Setup IOT big data cluster
+  hosts: kubernetes
+  gather_facts: false
+  vars:
+    cluster_name: "{{ cluster_name | default('iot-bigdata-cluster') }}"
+  tasks:
+    - name: Create namespaces
+      kubernetes.core.k8s:
+        name: "{{ item }}"
+        api_version: v1
+        kind: Namespace
+        state: present
+        kubeconfig: ~/.kube/config
+      loop:
+        - kafka
+        - databases
+        - iot-apps
+        - monitoring
+        - streaming
+      tags: namespaces
 
-      - name: Apply Zookeeper resources first
-        kubernetes.core.k8s:
-          state: present
-          src: "../../kubernetes/kafka/zookeeper.yaml"
-          kubeconfig: ~/.kube/config
-        tags: zookeeper
+    - name: Apply Zookeeper resources first
+      kubernetes.core.k8s:
+        state: present
+        src: "../../kubernetes/kafka/zookeeper.yaml"
+        kubeconfig: ~/.kube/config
+      tags: zookeeper
 
-      - name: Wait for Zookeeper to be ready
-        kubernetes.core.k8s_info:
-          api_version: apps/v1
-          kind: StatefulSet
-          namespace: kafka
-          name: zookeeper
-          kubeconfig: ~/.kube/config
-          wait_condition:
-            status: "True"
-            type: Ready
-          wait_timeout: 300
-        tags: zookeeper
+    - name: Wait for Zookeeper to be ready
+      kubernetes.core.k8s_info:
+        api_version: apps/v1
+        kind: StatefulSet
+        namespace: kafka
+        name: zookeeper
+        kubeconfig: ~/.kube/config
+        wait_condition:
+          status: "True"
+          type: Ready
+        wait_timeout: 300
+      tags: zookeeper
 
-      - name: Apply Kafka resources
-        kubernetes.core.k8s:
-          state: present
-          src: "../../kubernetes/kafka/kafka.yaml"
-          kubeconfig: ~/.kube/config
-        tags: kafka
+    - name: Apply Kafka resources
+      kubernetes.core.k8s:
+        state: present
+        src: "../../kubernetes/kafka/kafka.yaml"
+        kubeconfig: ~/.kube/config
+      tags: kafka
 
-      - name: Apply IoT apps resources
-        kubernetes.core.k8s:
-          state: present
-          src: "{{ item }}"
-          kubeconfig: ~/.kube/config
-        with_fileglob:
-          - "../../kubernetes/producer-consumer/*.yaml"
-        tags: iot-apps
-    # Add this to your existing ansible setup-cluster.yml
+    - name: Wait for Kafka to be ready
+      kubernetes.core.k8s_info:
+        api_version: apps/v1
+        kind: StatefulSet
+        namespace: kafka
+        name: kafka
+        kubeconfig: ~/.kube/config
+        wait_condition:
+          status: "True"
+          type: Ready
+        wait_timeout: 600
+      tags: kafka
 
-      - name: Apply Web Dashboard resources
-        kubernetes.core.k8s:
-          state: present
-          src: "../../kubernetes/web-dashboard/web-dashboard.yaml"
-          kubeconfig: ~/.kube/config
-        tags: web-dashboard
+    # Create Kafka topic for sheep data
+    - name: Create sheep-topic in Kafka
+      kubernetes.core.k8s_exec:
+        namespace: kafka
+        pod: kafka-0
+        command: >
+          kafka-topics.sh
+          --create
+          --topic sheep-topic
+          --bootstrap-server localhost:9092
+          --partitions 3
+          --replication-factor 2
+          --if-not-exists
+      ignore_errors: true
+      tags: kafka
 
-      - name: Wait for WebSocket server to be ready
-        kubernetes.core.k8s_info:
-          api_version: apps/v1
-          kind: Deployment
-          namespace: iot-apps
-          name: websocket-server
-          kubeconfig: ~/.kube/config
-          wait_condition:
-            status: "True"
-            type: Available
-          wait_timeout: 300
-        tags: web-dashboard
+    - name: Apply Web Dashboard resources
+      kubernetes.core.k8s:
+        state: present
+        definition: "{{ lookup('file', '../../kubernetes/web-dashboard/web-dashboard.yaml') | from_yaml_all | list }}"
+        kubeconfig: ~/.kube/config
+      tags: web-dashboard
 
-      - name: Wait for Web Dashboard to be ready
-        kubernetes.core.k8s_info:
-          api_version: apps/v1
-          kind: Deployment
-          namespace: iot-apps
-          name: web-dashboard
-          kubeconfig: ~/.kube/config
-          wait_condition:
-            status: "True"
-            type: Available
-          wait_timeout: 300
-        tags: web-dashboard
+    - name: Apply IoT apps resources (producers/consumers)
+      kubernetes.core.k8s:
+        state: present
+        src: "{{ item }}"
+        kubeconfig: ~/.kube/config
+      with_fileglob:
+        - "../../kubernetes/producer-consumer/*.yaml"
+      tags: iot-apps
 
-      - name: Get Web Dashboard service details
-        kubernetes.core.k8s_info:
-          api_version: v1
-          kind: Service
-          namespace: iot-apps
-          name: web-dashboard-service
-          kubeconfig: ~/.kube/config
-        register: dashboard_service
-        tags: web-dashboard
+    - name: Wait for WebSocket server to be ready
+      kubernetes.core.k8s_info:
+        api_version: apps/v1
+        kind: Deployment
+        namespace: iot-apps
+        name: websocket-server
+        kubeconfig: ~/.kube/config
+        wait_condition:
+          status: "True"
+          type: Available
+        wait_timeout: 300
+      tags: web-dashboard
 
-      - name: Display Web Dashboard access information
-        debug:
-          msg: |
-            🌐 Web Dashboard deployed successfully!
-            
-            {% if dashboard_service.resources[0].spec.type == 'LoadBalancer' %}
-            Access your dashboard at:
-            {% if dashboard_service.resources[0].status.loadBalancer.ingress is defined %}
-            http://{{ dashboard_service.resources[0].status.loadBalancer.ingress[0].ip }}
-            {% else %}
-            LoadBalancer IP pending... Check with: kubectl get svc web-dashboard-service -n iot-apps
-            {% endif %}
-            {% else %}
-            Access your dashboard via NodePort:
-            kubectl port-forward svc/web-dashboard-service -n iot-apps 8080:80
-            Then open: http://localhost:8080
-            {% endif %}
-            
-            📊 Features:
-            - Real-time sheep tracking on interactive map
-            - Live alerts when sheep are isolated
-            - Distance monitoring and statistics
-            - WebSocket connection status
-            
-            🔧 Troubleshooting:
-            - Check WebSocket server: kubectl logs -f deployment/websocket-server -n iot-apps
-            - Check web dashboard: kubectl logs -f deployment/web-dashboard -n iot-apps
-        tags: web-dashboard
-    
-    
+    - name: Wait for Web Dashboard to be ready
+      kubernetes.core.k8s_info:
+        api_version: apps/v1
+        kind: Deployment
+        namespace: iot-apps
+        name: web-dashboard
+        kubeconfig: ~/.kube/config
+        wait_condition:
+          status: "True"
+          type: Available
+        wait_timeout: 300
+      tags: web-dashboard
 
+    - name: Get Web Dashboard service details
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: Service
+        namespace: iot-apps
+        name: web-dashboard-service
+        kubeconfig: ~/.kube/config
+      register: dashboard_service
+      tags: web-dashboard
+
+    - name: Get WebSocket server service details
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: Service
+        namespace: iot-apps
+        name: websocket-server-service
+        kubeconfig: ~/.kube/config
+      register: websocket_service
+      tags: web-dashboard
+
+    - name: Display deployment status
+      debug:
+        msg: |
+          🎉 Sheep Tracking System deployed successfully!
+          
+          📊 Services Status:
+          - Web Dashboard: {{ dashboard_service.resources[0].spec.clusterIP }}:80
+          - WebSocket Server: {{ websocket_service.resources[0].spec.clusterIP }}:8080
+          
+          🌐 Access Instructions:
+          1. Port forward the web dashboard:
+             kubectl port-forward svc/web-dashboard-service -n iot-apps 8080:80
+          
+          2. Open your browser to: http://localhost:8080
+          
+          🔧 Troubleshooting Commands:
+          - Check WebSocket server logs:
+            kubectl logs -f deployment/websocket-server -n iot-apps
+          - Check web dashboard logs:
+            kubectl logs -f deployment/web-dashboard -n iot-apps
+          - Check Kafka status:
+            kubectl get pods -n kafka
+          - Test WebSocket connection:
+            kubectl exec -it kafka-0 -n kafka -- kafka-console-producer.sh --topic sheep-topic --bootstrap-server localhost:9092
+          
+          📈 Features Available:
+          - Real-time sheep tracking on interactive map
+          - Live alerts when sheep are isolated (>500m from herd)
+          - Distance monitoring and statistics
+          - Automatic fallback to simulation mode if Kafka unavailable
+          - WebSocket connection status indicator
+          
+          🐑 Next Steps:
+          - Start your sheep data producers
+          - Monitor the dashboard for real-time updates
+          - Configure alert thresholds as needed
+      tags: web-dashboard
+
+    - name: Create test producer script
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: test-producer-script
+            namespace: iot-apps
+          data:
+            test_producer.py: |
+              #!/usr/bin/env python3
+              import json
+              import time
+              import random
+              from kafka import KafkaProducer
+              from datetime import datetime
+              
+              producer = KafkaProducer(
+                  bootstrap_servers=[
+                      'kafka-0.kafka-headless.kafka.svc.cluster.local:9092',
+                      'kafka-1.kafka-headless.kafka.svc.cluster.local:9092'
+                  ],
+                  value_serializer=lambda v: json.dumps(v).encode('utf-8')
+              )
+              
+              # Base positions around Morocco coordinates
+              sheep_positions = {
+                  'Sheep_1': {'lat': 31.010530, 'lon': -7.012203},  # Isolated sheep
+                  'Sheep_2': {'lat': 31.000002, 'lon': -7.000008},
+                  'Sheep_3': {'lat': 31.000015, 'lon': -7.000012},
+                  'Sheep_4': {'lat': 30.999998, 'lon': -7.000005},
+                  'Sheep_5': {'lat': 31.000020, 'lon': -6.999995}
+              }
+              
+              print("Starting sheep data producer...")
+              
+              while True:
+                  for sheep_id, pos in sheep_positions.items():
+                      # Add random movement
+                      new_lat = pos['lat'] + (random.random() - 0.5) * 0.0001
+                      new_lon = pos['lon'] + (random.random() - 0.5) * 0.0001
+                      
+                      # Update base position slightly for next iteration
+                      pos['lat'] = new_lat
+                      pos['lon'] = new_lon
+                      
+                      message = {
+                          'sheep_id': sheep_id,
+                          'latitude': new_lat,
+                          'longitude': new_lon,
+                          'timestamp': datetime.now().isoformat()
+                      }
+                      
+                      producer.send('sheep-topic', message)
+                      print(f"Sent: {sheep_id} at ({new_lat:.6f}, {new_lon:.6f})")
+                      
+                      time.sleep(0.5)  # Small delay between sheep
+                  
+                  time.sleep(2)  # Wait before next round
+      tags: test-producer
+
+    - name: Display test producer information
+      debug:
+        msg: |
+          🧪 Test Producer Created!
+          
+          To start sending test data:
+          
+          1. Create a test pod:
+             kubectl run test-producer -n iot-apps --image=python:3.11-slim --rm -it -- /bin/bash
+          
+          2. Inside the pod, run:
+             pip install kafka-python
+             kubectl get configmap test-producer-script -n iot-apps -o jsonpath='{.data.test_producer\.py}' > test_producer.py
+             python test_producer.py
+          
+          This will generate realistic sheep movement data with one isolated sheep for testing alerts.
+      tags: test-producer
